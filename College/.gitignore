@@ -1,6 +1,13 @@
 /bin/
 
 # ---------------
+# Test cases
+# ---------------
+
+input.txt
+output.txt
+
+# ---------------
 # Eclipse related
 # ---------------
 

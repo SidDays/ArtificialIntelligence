@@ -1,8 +1,11 @@
 package ai.lizardnursery;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Scanner;
 
 /**
  * You will write a program that will take an input file that has an arrangement
@@ -46,32 +49,57 @@ public class LizardNursery {
 	private static int p;
 	
 	/**
-	 * 
+	 * Stores the initial nursery state that becomes the first node.
 	 */
-	// private static int[][] nursery;
+	private static int[][] nursery;
 
-	public static void main(String[] args)
+	public static void main(String[] args) 
 	{
-		// Hardcode away! <3
-		algo = "BFS";
-		n = 8;
-		p = 8;
-		int[][] nursery =
-					{{0,0,0,0,0,0,0,0}, 
-					{0,0,0,0,0,0,0,0}, 
-					{0,0,0,0,0,0,0,0}, 
-					{0,0,0,0,2,0,0,0}, 
-					{0,0,0,0,0,0,0,0}, 
-					{0,0,0,0,0,2,0,0}, 
-					{0,0,0,0,0,0,0,0}, 
-					{0,0,0,0,0,0,0,0}};
+		Scanner sc;
 
+		try
+		{
+			sc = new Scanner(new File(FILE_INPUT));
+
+			// Read contents of input file
+			algo = sc.nextLine().trim().toUpperCase();
+
+			n = Integer.parseInt(sc.nextLine());
+			nursery = new int[n][n];
+
+			p = Integer.parseInt(sc.nextLine());
+			
+			// Read initial nursery layout
+			for(int i = 0; i < n; i++)
+			{
+				String row = sc.nextLine();
+				for(int j = 0; j < n; j++)
+				{
+					nursery[i][j] = Integer.parseInt(String.valueOf(row.charAt(j)));
+				}
+			}
+			
+			// Print everything
+			System.out.println(algo);
+			System.out.println(n);
+			System.out.println(p);
+			for(int i = 0; i < n; i++)
+			{
+				for(int j = 0; j < n; j++)
+					System.out.print(nursery[i][j]);
+				System.out.println();
+			}
+
+			sc.close();
+
+		} catch (FileNotFoundException e) { }
+		
 	}
 
 }
 
 /**
- * An object to simply denote a point on the nursery grid.
+ * A class to simply denote a point on the nursery grid.
  * Does not contain information about what is in that point.
  */
 class NurseryGridPoint
@@ -114,18 +142,26 @@ class NurseryGridPoint
  */
 class NurseryNode
 {
+	// TODO
+	public static NurseryNode insertLizard(NurseryNode node)
+	{
+		NurseryNode newNode = null;
+		
+		return newNode;
+	}
+	
 	private List<NurseryGridPoint> availablePoints;
 	
-	/**
-	 * Not sure if this is required for purposes beyond printing.
-	 */
 	private int[][] nursery;
+	
+	private int depth = 0;
 	
 	/**
 	 * Create a blank NurseryState.
 	 */
 	NurseryNode()
 	{
+		// Initialize blank availablePoints
 		availablePoints = new LinkedList<NurseryGridPoint>();
 	}
 	
@@ -136,10 +172,10 @@ class NurseryNode
 	 * Ideally, input should not have anything but 0's and 2's.
 	 */
 	NurseryNode(int[][] nursery) {
+		this(); // call default constructor
 		
 		this.nursery = nursery;
 		
-		availablePoints = new LinkedList<NurseryGridPoint>();
 		for(int i = 0; i < nursery.length; i++)
 		{
 			for(int j = 0; j < nursery[0].length; j++)
