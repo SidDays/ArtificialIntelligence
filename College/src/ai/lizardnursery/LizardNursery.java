@@ -1,6 +1,7 @@
 package ai.lizardnursery;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 /**
@@ -70,7 +71,8 @@ public class LizardNursery {
 }
 
 /**
- * 
+ * An object to simply denote a point on the nursery grid.
+ * Does not contain information about what is in that point.
  */
 class NurseryGridPoint
 {
@@ -96,17 +98,58 @@ class NurseryGridPoint
 	public int getY() {
 		return y;
 	}
+	
+	public String toString()
+	{
+		return String.format("(%d, %d)", x, y);
+	}
 
 }
 
 /**
- * Defines a basic state in the search tree.
+ * Defines a basic state in the search tree.<br>
+ * <br>
+ * A NurseryState basically contains a list of all the
+ * available 'free' positions where a lizard can be placed.
  */
-class NurseryState {
-	Queue<NurseryGridPoint> availablePoints;
+class NurseryNode
+{
+	private List<NurseryGridPoint> availablePoints;
 	
-	NurseryState()
+	/**
+	 * Not sure if this is required for purposes beyond printing.
+	 */
+	private int[][] nursery;
+	
+	/**
+	 * Create a blank NurseryState.
+	 */
+	NurseryNode()
 	{
 		availablePoints = new LinkedList<NurseryGridPoint>();
+	}
+	
+	/**
+	 * Creates a state of available free positions given the input matrix.
+	 * 
+	 * @param nursery 0 indicates free position, 1 lizard and 2 tree.
+	 * Ideally, input should not have anything but 0's and 2's.
+	 */
+	NurseryNode(int[][] nursery) {
+		
+		this.nursery = nursery;
+		
+		availablePoints = new LinkedList<NurseryGridPoint>();
+		for(int i = 0; i < nursery.length; i++)
+		{
+			for(int j = 0; j < nursery[0].length; j++)
+			{
+				if(nursery[i][j] == 0) {
+					NurseryGridPoint pt = new NurseryGridPoint(i, j);
+					availablePoints.add(pt);
+					System.out.println(pt);
+				}
+			}
+		}
 	}
 }
