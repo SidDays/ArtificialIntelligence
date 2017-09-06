@@ -2,6 +2,8 @@ package ai.lizardnursery;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -31,7 +33,7 @@ import java.util.Scanner;
 public class LizardNursery {
 
 	private static final String FILE_INPUT = "input.txt";
-	// private static final String FILE_OUTPUT = "output.txt";
+	private static final String FILE_OUTPUT = "output.txt";
 
 	/**
 	 * The algorithm to use: BFS, DFS or SA.
@@ -61,134 +63,240 @@ public class LizardNursery {
 	private static boolean isSolvable = false;
 
 	/**
-	 * Inserts a lizard in the first free available spot on the grid for
+	 * Inserts a lizard in the given free spot on the grid for
 	 * a node, and returns a new node with that configuration.
 	 * 
 	 * After the lizard is placed, also makes all spots in the lizard's LOS
 	 * (and the lizard's position) unavailable.
 	 * 
-	 * This method will need to be modified to place a lizard at a
-	 * specified point instead - TODO
-	 * 
-	 * @param node
+	 * @param node The parent node
+	 * @param pointFree NurseryGridPoint that does not contain a lizard
+	 * @return The new child node with the new configurations
+	 */
+	public static NurseryNode insertLizard(NurseryNode node, NurseryGridPoint pointFree)
+	{
+		NurseryNode newNode = new NurseryNode(node); // copy Constructor
+		newNode.setDepth(node.getDepth() + 1);
+
+		List<NurseryGridPoint> availablePointsForThis = newNode.getAvailablePoints();
+		availablePointsForThis.remove(pointFree);
+
+		// Place a lizard
+		int xpos = pointFree.getX();
+		int ypos = pointFree.getY();
+		int[][] nursery = newNode.getNursery();
+		nursery[xpos][ypos] = 1;
+
+		int xlos, ylos;
+
+		// Propogate the lizard's LOS and mark those spaces as unavailable
+		xlos = xpos; ylos = ypos;
+
+		// Left side
+		while(--xlos >= 0)
+		{		
+			if(nursery[xlos][ylos] == 2) // Break if it's a tree
+				break;
+			NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
+			if(availablePointsForThis.remove(pointToRemove)) {
+				// System.out.println(pointToRemove+" (left) removed from availablePoints.");
+			}
+		}
+		xlos = xpos; ylos = ypos;
+
+		// Right side
+		while(++xlos < n)
+		{		
+			if(nursery[xlos][ylos] == 2)
+				break;
+			NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
+			if(availablePointsForThis.remove(pointToRemove)) {
+				// System.out.println(pointToRemove+" (right) removed from availablePoints.");
+			}
+		}
+		xlos = xpos; ylos = ypos;
+
+		// Top side
+		while(++ylos < n)
+		{		
+			if(nursery[xlos][ylos] == 2) // Break if it's a tree
+				break;
+			NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
+			if(availablePointsForThis.remove(pointToRemove)) {
+				// System.out.println(pointToRemove+" (top) removed from availablePoints.");
+			}
+		}
+		xlos = xpos; ylos = ypos;
+
+		// Bottom side
+		while(--ylos >= 0)
+		{		
+			if(nursery[xlos][ylos] == 2) // Break if it's a tree
+				break;
+			NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
+			if(availablePointsForThis.remove(pointToRemove)) {
+				// System.out.println(pointToRemove+" (bottom) removed from availablePoints.");
+			}
+		}
+		xlos = xpos; ylos = ypos;
+
+		// Top-left side
+		while(--xlos >= 0 && ++ylos < n)
+		{		
+			if(nursery[xlos][ylos] == 2) // Break if it's a tree
+				break;
+			NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
+			if(availablePointsForThis.remove(pointToRemove)) {
+				// System.out.println(pointToRemove+" (top-left) removed from availablePoints.");
+			}
+		}
+		xlos = xpos; ylos = ypos;
+
+		// Top-right side
+		while(++xlos < n && ++ylos < n)
+		{		
+			if(nursery[xlos][ylos] == 2) // Break if it's a tree
+				break;
+			NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
+			if(availablePointsForThis.remove(pointToRemove)) {
+				// System.out.println(pointToRemove+" (top-right) removed from availablePoints.");
+			}
+		}
+		xlos = xpos; ylos = ypos;
+
+		// Bottom-left side
+		while(--xlos >= 0 && --ylos >= 0)
+		{		
+			if(nursery[xlos][ylos] == 2) // Break if it's a tree
+				break;
+			NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
+			if(availablePointsForThis.remove(pointToRemove)) {
+				// System.out.println(pointToRemove+" (bottom-left) removed from availablePoints.");
+			}
+		}
+		xlos = xpos; ylos = ypos;
+
+		// Bottom-right side
+		while(++xlos < n && --ylos >= 0)
+		{		
+			if(nursery[xlos][ylos] == 2) // Break if it's a tree
+				break;
+			NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
+			if(availablePointsForThis.remove(pointToRemove)) {
+				// System.out.println(pointToRemove+" (bottom-right) removed from availablePoints.");
+			}
+		}
+		xlos = xpos; ylos = ypos;
+
+		// Lizard has been placed, all blocked spots removed
+		return newNode;
+	}
+
+	/**
+	 * Breadth-First Search TODO
+	 */
+	public static void solveBfs()
+	{
+		bfsQueue = new LinkedList<>();
+
+		// create initial node
+		NurseryNode initNode = new NurseryNode(nursery);
+		bfsQueue.add(initNode);
+
+		while(!bfsQueue.isEmpty())
+		{
+			NurseryNode nodeCurrent = bfsQueue.remove();
+
+			// Goal-Test: number of lizards = depth of child node
+			if(nodeCurrent.getDepth() == p)
+			{
+				isSolvable = true;
+
+				// Print solution to console as well as file
+				PrintWriter writer = null;
+				try{
+					
+					writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
+					
+					System.out.println("OK");
+					writer.println("OK");
+					
+					printMatrix(nodeCurrent.getNursery());
+					writer.print(matrixAsString(nodeCurrent.getNursery()));
+
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					if(writer != null)
+						writer.close();
+				}
+
+				break;
+			}
+
+			// create child nodes for all the free available points.
+			List<NurseryGridPoint> availablePointsCurrent = nodeCurrent.getAvailablePoints();
+
+			for(NurseryGridPoint pointFreeCurrent : availablePointsCurrent)
+			{
+				bfsQueue.add(insertLizard(nodeCurrent, pointFreeCurrent));
+			}
+		}
+
+
+		// Finished
+		if(!isSolvable) {
+			System.out.println("FAIL");
+		}
+	}
+
+	/**
+	 * Depth-First Search TODO
+	 */
+	public static void solveDfs()
+	{
+
+	}
+
+	/**
+	 * Simulated annealing TODO
+	 */
+	public static void solveSa()
+	{
+
+	}
+
+	/**
+	 * Prints a 2D matrix to console.
+	 * @param m
+	 */
+	public static void printMatrix(int[][] m)
+	{
+		for(int i = 0; i < m.length; i++)
+		{
+			for(int j = 0;  j < m[0].length; j++)
+				System.out.print(m[i][j]);
+			System.out.println();
+		}
+	}
+
+	/**
+	 * Returns a String representation of a 2D matrix.
+	 * @param m
 	 * @return
 	 */
-	@Deprecated
-	public static NurseryNode insertLizard(NurseryNode node)
+	public static String matrixAsString(int[][] m)
 	{
-		NurseryNode newNode = new NurseryNode(node);
+		StringBuffer sb = new StringBuffer();
 
-		// Find a free point to place a lizard in
-		List<NurseryGridPoint> availablePointsForThis = newNode.getAvailablePoints();
-		if(!availablePointsForThis.isEmpty())
+		for(int i = 0; i < m.length; i++)
 		{
-			NurseryGridPoint pointFree = availablePointsForThis.remove(0); // <- change this code
-
-			// Place a lizard
-			int xpos = pointFree.getX();
-			int ypos = pointFree.getY();
-			int[][] nursery = newNode.getNursery();
-			nursery[xpos][ypos] = 1;
-
-			int xlos, ylos;
-
-			// Propogate the lizard's LOS and mark those spaces as unavailable
-			xlos = xpos; ylos = ypos;
-
-			// Left side
-			while(--xlos >= 0)
-			{		
-				if(nursery[xlos][ylos] == 2) // Break if it's a tree
-					break;
-				NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
-				if(availablePointsForThis.remove(pointToRemove))
-					System.out.println(pointToRemove+" (left) removed from availablePoints.");
-			}
-			xlos = xpos; ylos = ypos;
-
-			// Right side
-			while(++xlos < n)
-			{		
-				if(nursery[xlos][ylos] == 2)
-					break;
-				NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
-				if(availablePointsForThis.remove(pointToRemove))
-					System.out.println(pointToRemove+" (right) removed from availablePoints.");
-			}
-			xlos = xpos; ylos = ypos;
-
-			// Top side
-			while(++ylos < n)
-			{		
-				if(nursery[xlos][ylos] == 2) // Break if it's a tree
-					break;
-				NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
-				if(availablePointsForThis.remove(pointToRemove))
-					System.out.println(pointToRemove+" (top) removed from availablePoints.");
-			}
-			xlos = xpos; ylos = ypos;
-
-			// Bottom side
-			while(--ylos >= 0)
-			{		
-				if(nursery[xlos][ylos] == 2) // Break if it's a tree
-					break;
-				NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
-				if(availablePointsForThis.remove(pointToRemove))
-					System.out.println(pointToRemove+" (bottom) removed from availablePoints.");
-			}
-			xlos = xpos; ylos = ypos;
-
-			// Top-left side
-			while(--xlos >= 0 && ++ylos < n)
-			{		
-				if(nursery[xlos][ylos] == 2) // Break if it's a tree
-					break;
-				NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
-				if(availablePointsForThis.remove(pointToRemove))
-					System.out.println(pointToRemove+" (top-left) removed from availablePoints.");
-			}
-			xlos = xpos; ylos = ypos;
-
-			// Top-right side
-			while(++xlos < n && ++ylos < n)
-			{		
-				if(nursery[xlos][ylos] == 2) // Break if it's a tree
-					break;
-				NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
-				if(availablePointsForThis.remove(pointToRemove))
-					System.out.println(pointToRemove+" (top-right) removed from availablePoints.");
-			}
-			xlos = xpos; ylos = ypos;
-
-			// Bottom-left side
-			while(--xlos >= 0 && --ylos >= 0)
-			{		
-				if(nursery[xlos][ylos] == 2) // Break if it's a tree
-					break;
-				NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
-				if(availablePointsForThis.remove(pointToRemove))
-					System.out.println(pointToRemove+" (bottom-left) removed from availablePoints.");
-			}
-			xlos = xpos; ylos = ypos;
-
-			// Bottom-right side
-			while(++xpos < n && --ylos >= 0)
-			{		
-				if(nursery[xlos][ylos] == 2) // Break if it's a tree
-					break;
-				NurseryGridPoint pointToRemove = new NurseryGridPoint(xlos, ylos);
-				if(availablePointsForThis.remove(pointToRemove))
-					System.out.println(pointToRemove+" (bottom-right) removed from availablePoints.");
-			}
-			xlos = xpos; ylos = ypos;
-			
-			// Lizard has been placed, all blocked spots removed
-			return newNode;
+			for(int j = 0;  j < m[0].length; j++)
+				sb.append(m[i][j]);
+			sb.append(System.lineSeparator());
 		}
-		else
-			return null;
 
+		return sb.toString();
 	}
 
 	public static void main(String[] args) 
@@ -217,46 +325,23 @@ public class LizardNursery {
 				}
 			}
 
-			/*System.out.println(algo); // Print everything
+			System.out.println(algo); // Print everything
 			System.out.println(n);
 			System.out.println(p);
-			for(int i = 0; i < n; i++)
-			{
-				for(int j = 0; j < n; j++)
-					System.out.print(nursery[i][j]);
-				System.out.println();
-			}*/
+			printMatrix(nursery);
 
 			// Run the algorithm
 			if(algo.equals("BFS"))
 			{
-				// TODO Process this stuff
-				bfsQueue = new LinkedList<>();
-
-				// create initial node
-				NurseryNode initNode = new NurseryNode(nursery);
-				bfsQueue.add(initNode);
-
-				while(!bfsQueue.isEmpty())
-				{
-					NurseryNode current = bfsQueue.remove();
-				}
-
-
-
-				// Finished
-				if(!isSolvable)
-				{
-					System.out.println("FAIL");
-				}
+				solveBfs();
 			}
 			else if(algo.equals("DFS"))
 			{
-				// TODO Process this stuff
+				solveDfs();
 			}
 			else if(algo.equals("SA"))
 			{
-				// TODO Process this stuff
+				solveSa();
 			}
 			else {
 				System.out.println("FAIL");
@@ -343,7 +428,7 @@ class NurseryGridPoint
 }
 
 /**
- * Defines a basic state in the search tree.<br>
+ * Defines a node containing a basic state in the search tree.<br>
  * <br>
  * A NurseryNode basically contains a list of all the
  * available 'free' positions where a lizard can be placed.
@@ -368,7 +453,25 @@ class NurseryNode
 		return nursery;
 	}
 
+	/**
+	 * Depth of the search tree. Also indicates the number of lizards, and can
+	 * be used as a goal test.
+	 */
 	private int depth = 0;
+
+	/**
+	 * @return the depth
+	 */
+	public int getDepth() {
+		return depth;
+	}
+
+	/**
+	 * @param depth the depth to set
+	 */
+	public void setDepth(int depth) {
+		this.depth = depth;
+	}
 
 	/**
 	 * Create a blank NurseryState.
