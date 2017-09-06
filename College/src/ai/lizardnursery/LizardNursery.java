@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 /**
  * You will write a program that will take an input file that has an arrangement
@@ -34,6 +36,8 @@ public class LizardNursery {
 
 	private static final String FILE_INPUT = "input.txt";
 	private static final String FILE_OUTPUT = "output.txt";
+	
+	private static final boolean MEASURE_TIME = true;
 
 	/**
 	 * The algorithm to use: BFS, DFS or SA.
@@ -59,6 +63,8 @@ public class LizardNursery {
 	 * Frontier for Breadth-First Search.
 	 */
 	private static Queue<NurseryNode> bfsQueue;
+	
+	private static Deque<NurseryNode> dfsStack;
 
 	private static boolean isSolvable = false;
 
@@ -206,6 +212,8 @@ public class LizardNursery {
 		while(!bfsQueue.isEmpty())
 		{
 			NurseryNode nodeCurrent = bfsQueue.remove();
+			
+			System.out.println(nodeCurrent);
 
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.getDepth() == p)
@@ -255,7 +263,59 @@ public class LizardNursery {
 	 */
 	public static void solveDfs()
 	{
+		dfsStack = new LinkedList<>();
 
+		// create initial node
+		NurseryNode initNode = new NurseryNode(nursery);
+		dfsStack.addFirst(initNode);
+
+		while(!dfsStack.isEmpty())
+		{
+			NurseryNode nodeCurrent = dfsStack.removeFirst();
+			
+			System.out.println(nodeCurrent);
+
+			// Goal-Test: number of lizards = depth of child node
+			if(nodeCurrent.getDepth() == p)
+			{
+				isSolvable = true;
+
+				// Print solution to console as well as file
+				PrintWriter writer = null;
+				try{
+					
+					writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
+					
+					System.out.println("OK");
+					writer.println("OK");
+					
+					printMatrix(nodeCurrent.getNursery());
+					writer.print(matrixAsString(nodeCurrent.getNursery()));
+
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					if(writer != null)
+						writer.close();
+				}
+
+				break;
+			}
+
+			// create child nodes for all the free available points.
+			List<NurseryGridPoint> availablePointsCurrent = nodeCurrent.getAvailablePoints();
+
+			for(NurseryGridPoint pointFreeCurrent : availablePointsCurrent)
+			{
+				dfsStack.addFirst(insertLizard(nodeCurrent, pointFreeCurrent));
+			}
+		}
+
+
+		// Finished
+		if(!isSolvable) {
+			System.out.println("FAIL");
+		}
 	}
 
 	/**
@@ -302,6 +362,8 @@ public class LizardNursery {
 	public static void main(String[] args) 
 	{
 		Scanner sc;
+		
+		long timeStart = System.nanoTime();
 
 		// Read contents of input file
 		try
@@ -351,6 +413,13 @@ public class LizardNursery {
 
 		} catch (FileNotFoundException e) { }
 
+		if(MEASURE_TIME)
+		{
+			long timeEnd = System.nanoTime();
+			
+			System.out.println("Completed in "+
+			TimeUnit.NANOSECONDS.toSeconds(timeEnd-timeStart)+"s");
+		}
 	}
 
 }
@@ -520,7 +589,7 @@ class NurseryNode
 
 	public String toString()
 	{
-		return String.format("depth = %d, availablePoints (%d) = %s",
-				depth, availablePoints.size(), availablePoints);
+		return String.format("depth = %d, %d availablePoints",
+				depth, availablePoints.size());
 	}
 }
