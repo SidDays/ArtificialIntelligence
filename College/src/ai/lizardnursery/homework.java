@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,6 +59,16 @@ public class homework {
 	 * Stores the initial nursery state that becomes the first node.
 	 */
 	private static int[][] nursery;
+	
+	/**
+	 * When the solution is found, place it into this matrix.
+	 */
+	private static int[][] solution;
+	
+	/**
+	 * Stores the locations of all the trees on the grid.
+	 */
+	private static List<NurseryGridPoint> treePoints;
 
 	/**
 	 * Frontier for Breadth-First Search.
@@ -90,8 +101,11 @@ public class homework {
 		// Place a lizard
 		int xpos = pointFree.getX();
 		int ypos = pointFree.getY();
-		int[][] nursery = newNode.getNursery();
-		nursery[xpos][ypos] = 1;
+		/*int[][] nursery = newNode.getNursery();
+		nursery[xpos][ypos] = 1;*/
+		
+		newNode.lizardPoints = new ArrayList<>(node.lizardPoints);
+		newNode.lizardPoints.add(new NurseryGridPoint(xpos, ypos));
 
 		int xlos, ylos;
 
@@ -199,7 +213,7 @@ public class homework {
 	}
 
 	/**
-	 * Breadth-First Search TODO
+	 * Breadth-First Search
 	 */
 	public static void solveBfs()
 	{
@@ -218,26 +232,7 @@ public class homework {
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.getDepth() == p)
 			{
-				isSolvable = true;
-
-				// Print solution to console as well as file
-				PrintWriter writer = null;
-				try{
-					
-					writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
-					
-					System.out.println("OK");
-					writer.println("OK");
-					
-					printMatrix(nodeCurrent.getNursery());
-					writer.print(matrixAsString(nodeCurrent.getNursery()));
-
-				} catch (IOException e) {
-					e.printStackTrace();
-				} finally {
-					if(writer != null)
-						writer.close();
-				}
+				finishBfsAndDfs(nodeCurrent);
 
 				break;
 			}
@@ -259,7 +254,7 @@ public class homework {
 	}
 
 	/**
-	 * Depth-First Search TODO
+	 * Depth-First Search
 	 */
 	public static void solveDfs()
 	{
@@ -278,26 +273,7 @@ public class homework {
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.getDepth() == p)
 			{
-				isSolvable = true;
-
-				// Print solution to console as well as file
-				PrintWriter writer = null;
-				try{
-					
-					writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
-					
-					System.out.println("OK");
-					writer.println("OK");
-					
-					printMatrix(nodeCurrent.getNursery());
-					writer.print(matrixAsString(nodeCurrent.getNursery()));
-
-				} catch (IOException e) {
-					e.printStackTrace();
-				} finally {
-					if(writer != null)
-						writer.close();
-				}
+				finishBfsAndDfs(nodeCurrent);
 
 				break;
 			}
@@ -324,6 +300,56 @@ public class homework {
 	public static void solveSa()
 	{
 
+	}
+	
+	/**
+	 * 
+	 */
+	public static void finishBfsAndDfs(NurseryNode nodeCurrent)
+	{
+		isSolvable = true;
+
+		// Print solution to console as well as file
+		PrintWriter writer = null;
+		try{
+			
+			writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
+			
+			System.out.println("OK");
+			writer.println("OK");
+			
+			/*printMatrix(nodeCurrent.getNursery());
+			writer.print(matrixAsString(nodeCurrent.getNursery()));*/
+			
+			// TODO Reconstruct solution
+			solution = new int[n][n];
+			for(int i = 0; i < n; i ++)
+			{
+				for(int j = 0; j < n; j++)
+				{
+					solution[i][j] = 0;
+				}
+			}
+			
+			for(NurseryGridPoint point : treePoints)
+			{
+				solution[point.getX()][point.getY()] = 2;
+			}
+			for(NurseryGridPoint point : nodeCurrent.lizardPoints)
+			{
+				solution[point.getX()][point.getY()] = 1;
+			}
+			
+			printMatrix(solution);
+			writer.print(solution);
+			
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if(writer != null)
+				writer.close();
+		}
 	}
 
 	/**
@@ -378,14 +404,19 @@ public class homework {
 			p = Integer.parseInt(sc.nextLine());
 
 			// Read initial nursery layout
+			// Add  trees to the tree points list.
+			treePoints = new ArrayList<>();
 			for(int i = 0; i < n; i++)
 			{
 				String row = sc.nextLine();
 				for(int j = 0; j < n; j++)
 				{
 					nursery[i][j] = Integer.parseInt(String.valueOf(row.charAt(j)));
+					
+					if(nursery[i][j] == 2)
+						treePoints.add(new NurseryGridPoint(i, j));
 				}
-			}
+			}		
 
 			System.out.println(algo); // Print everything
 			System.out.println(n);
@@ -505,6 +536,8 @@ class NurseryGridPoint
 class NurseryNode
 {	
 	private List<NurseryGridPoint> availablePoints;
+	
+	public List<NurseryGridPoint> lizardPoints; // lmao it's public :(
 
 	/**
 	 * @return the availablePoints
@@ -513,17 +546,17 @@ class NurseryNode
 		return availablePoints;
 	}
 
-	private int[][] nursery;
+	// private int[][] nursery;
 
 	/**
 	 * @return the nursery
 	 * 
-	 * TODO Is it really necessary to store the whole matrix? Reconstruct solution instead,
-	 * or store tree positions as NurseryGridPoints.
+	 * Is it really necessary to store the whole matrix? Reconstruct solution instead,
+	 * while storing tree positions as NurseryGridPoints.
 	 */
-	public int[][] getNursery() {
+	/*public int[][] getNursery() {
 		return nursery;
-	}
+	}*/
 
 	/**
 	 * Depth of the search tree. Also indicates the number of lizards, and can
@@ -551,25 +584,28 @@ class NurseryNode
 	NurseryNode()
 	{
 		// Initialize blank availablePoints
-		availablePoints = new LinkedList<>();
+		availablePoints = new ArrayList<>();
+		
+		// New node contains no lizards
+		lizardPoints = new ArrayList<>();
 	}
 
 	/**
 	 * Creates a state of available free positions given the input matrix.
 	 * 
-	 * @param nursery 0 indicates free position, 1 lizard and 2 tree.
+	 * @param nurseryParam 0 indicates free position, 1 lizard and 2 tree.
 	 * Ideally, input should not have anything but 0's and 2's.
 	 */
-	NurseryNode(int[][] nursery) {
+	NurseryNode(int[][] nurseryParam) {
 		this(); // call default constructor
 
-		this.nursery = nursery;
+		// this.nursery = nursery;
 
-		for(int i = 0; i < nursery.length; i++)
+		for(int i = 0; i < nurseryParam.length; i++)
 		{
-			for(int j = 0; j < nursery[0].length; j++)
+			for(int j = 0; j < nurseryParam[0].length; j++)
 			{
-				if(nursery[i][j] == 0) {
+				if(nurseryParam[i][j] == 0) {
 					NurseryGridPoint pt = new NurseryGridPoint(i, j);
 					availablePoints.add(pt);
 				}
@@ -585,9 +621,9 @@ class NurseryNode
 		this.depth = node.depth;
 		this.availablePoints = new LinkedList<>(node.availablePoints);
 
-		this.nursery = new int[node.nursery.length][];
+		/*this.nursery = new int[node.nursery.length][];
 		for(int i = 0; i < node.nursery.length; i++)
-			this.nursery[i] = node.nursery[i].clone();
+			this.nursery[i] = node.nursery[i].clone();*/
 	}
 
 	public String toString()
