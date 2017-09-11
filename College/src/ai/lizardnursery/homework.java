@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * 
  * It will have a 0 where there is nothing, and a 2 where there is a tree.
  */
-public class LizardNursery {
+public class homework {
 
 	private static final String FILE_INPUT = "input.txt";
 	private static final String FILE_OUTPUT = "output.txt";
@@ -517,6 +517,9 @@ class NurseryNode
 
 	/**
 	 * @return the nursery
+	 * 
+	 * TODO Is it really necessary to store the whole matrix? Reconstruct solution instead,
+	 * or store tree positions as NurseryGridPoints.
 	 */
 	public int[][] getNursery() {
 		return nursery;
