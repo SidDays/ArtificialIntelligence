@@ -37,6 +37,7 @@ public class homework {
 
 	private static final String FILE_INPUT = "input.txt";
 	private static final String FILE_OUTPUT = "output.txt";
+	private static final boolean DEBUG_MODE = true;
 	
 	private static final boolean MEASURE_TIME = true;
 
@@ -227,7 +228,8 @@ public class homework {
 		{
 			NurseryNode nodeCurrent = bfsQueue.remove();
 			
-			System.out.println(nodeCurrent);
+			if(DEBUG_MODE)
+				System.out.println(nodeCurrent);
 
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.getDepth() == p)
@@ -268,7 +270,8 @@ public class homework {
 		{
 			NurseryNode nodeCurrent = dfsStack.removeFirst();
 			
-			System.out.println(nodeCurrent);
+			if(DEBUG_MODE)
+				System.out.println(nodeCurrent);
 
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.getDepth() == p)
@@ -299,7 +302,7 @@ public class homework {
 	 */
 	public static void solveSa()
 	{
-
+		
 	}
 	
 	/**
@@ -321,7 +324,7 @@ public class homework {
 			/*printMatrix(nodeCurrent.getNursery());
 			writer.print(matrixAsString(nodeCurrent.getNursery()));*/
 			
-			// TODO Reconstruct solution
+			// Reconstruct solution
 			solution = new int[n][n];
 			for(int i = 0; i < n; i ++)
 			{
@@ -341,7 +344,7 @@ public class homework {
 			}
 			
 			printMatrix(solution);
-			writer.print(solution);
+			writer.print(matrixAsString(solution));
 			
 
 		} catch (IOException e) {
