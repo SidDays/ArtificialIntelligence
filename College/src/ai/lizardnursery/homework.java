@@ -5,10 +5,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +41,15 @@ public class homework {
 	private static final String FILE_OUTPUT = "output.txt";
 	private static final boolean DEBUG_MODE = true;
 	
+	/**
+	 * If true, prints the computation time to the console.
+	 */
 	private static final boolean MEASURE_TIME = true;
+	
+	/**
+	 * The maximum number of iterations for Simulated Annealing.
+	 */
+	private static final int MAX_SA_TIME = 1000;
 
 	/**
 	 * The algorithm to use: BFS, DFS or SA.
@@ -71,13 +81,6 @@ public class homework {
 	 */
 	private static List<NurseryGridPoint> treePoints;
 
-	/**
-	 * Frontier for Breadth-First Search.
-	 */
-	private static Queue<NurseryNode> bfsQueue;
-	
-	private static Deque<NurseryNode> dfsStack;
-
 	private static boolean isSolvable = false;
 
 	/**
@@ -91,7 +94,7 @@ public class homework {
 	 * @param pointFree NurseryGridPoint that does not contain a lizard
 	 * @return The new child node with the new configurations
 	 */
-	public static NurseryNode insertLizard(NurseryNode node, NurseryGridPoint pointFree)
+	private static NurseryNode insertLizard(NurseryNode node, NurseryGridPoint pointFree)
 	{
 		NurseryNode newNode = new NurseryNode(node); // copy Constructor
 		newNode.setDepth(node.getDepth() + 1);
@@ -216,9 +219,12 @@ public class homework {
 	/**
 	 * Breadth-First Search
 	 */
-	public static void solveBfs()
+	private static void solveBfs()
 	{
-		bfsQueue = new LinkedList<>();
+		/**
+		 * Frontier for Breadth-First Search.
+		 */
+		Queue<NurseryNode> bfsQueue = new LinkedList<>();
 
 		// create initial node
 		NurseryNode initNode = new NurseryNode(nursery);
@@ -258,9 +264,9 @@ public class homework {
 	/**
 	 * Depth-First Search
 	 */
-	public static void solveDfs()
+	private static void solveDfs()
 	{
-		dfsStack = new LinkedList<>();
+		Deque<NurseryNode> dfsStack = new LinkedList<>();
 
 		// create initial node
 		NurseryNode initNode = new NurseryNode(nursery);
@@ -300,15 +306,88 @@ public class homework {
 	/**
 	 * Simulated annealing TODO
 	 */
-	public static void solveSa()
+	private static void solveSa()
 	{
+		List<NurseryGridPoint> availablePoints = new ArrayList<>();
+		List<NurseryGridPoint> lizardPoints = new ArrayList<>();
+		
+		/** Initial temperature */
+		double temp = 100;
+		
+		// First, populate availablePoints
+		for(int i = 0; i < nursery.length; i++)
+		{
+			for(int j = 0; j < nursery[0].length; j++)
+			{
+				if(nursery[i][j] == 0) {
+					NurseryGridPoint pt = new NurseryGridPoint(i, j);
+					availablePoints.add(pt);
+				}
+			}
+		}
+
+		// If a solution is possible at all
+		if(p >= availablePoints.size()) {
+
+			// For the initial state, fill in p availablePoints randomly with lizards
+			Collections.shuffle(availablePoints);
+			for(int i = 0; i < p; i++)
+			{
+				// Important - make sure to change the nursery as well!
+				NurseryGridPoint point = availablePoints.remove(0);
+				lizardPoints.add(point);
+				nursery[point.getX()][point.getY()] = 1;
+			}
+
+			// Compute its energy
+			double energyCurrent, energyNew;
+
+			// Start Simulated Annealing
+			int time = 1;
+			while(temp > 0 || time < MAX_SA_TIME) {
+
+				// pick a random successor state
+			}
+		}
+		else {
+			// TODO Failed!!
+		}
+
 		
 	}
 	
 	/**
+	 * Compute the energy for a given state in Simulated Annealing.
 	 * 
+	 * A measure of energy is the number of 'conflicting' lizards.
+	 * 
+	 * By default, computes the energy of the current nursery.
 	 */
-	public static void finishBfsAndDfs(NurseryNode nodeCurrent)
+	private static double energy()
+	{
+		double energy = -1;
+		
+		// TODO
+		
+		return energy;
+	}
+	
+	/**
+	 * The schedule function for simulated annealing.
+	 * Default schedules are usually 1/log(n).
+	 * @param time
+	 * @return
+	 */
+	private static double tempSchedule(int time)
+	{
+		return 1.0/Math.log(time);
+	}
+	
+	/**
+	 * This function is called when a solution is found using
+	 * either BFS or DFS.
+	 */
+	private static void finishBfsAndDfs(NurseryNode nodeCurrent)
 	{
 		isSolvable = true;
 
@@ -548,18 +627,6 @@ class NurseryNode
 	public List<NurseryGridPoint> getAvailablePoints() {
 		return availablePoints;
 	}
-
-	// private int[][] nursery;
-
-	/**
-	 * @return the nursery
-	 * 
-	 * Is it really necessary to store the whole matrix? Reconstruct solution instead,
-	 * while storing tree positions as NurseryGridPoints.
-	 */
-	/*public int[][] getNursery() {
-		return nursery;
-	}*/
 
 	/**
 	 * Depth of the search tree. Also indicates the number of lizards, and can
