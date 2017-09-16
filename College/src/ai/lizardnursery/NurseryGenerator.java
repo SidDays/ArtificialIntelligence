@@ -24,18 +24,19 @@ public class NurseryGenerator {
 	private static boolean useSetValues = true;
 	
 	/** Side of nursery grid */
-	private static int n = 6;
+	private static int n = 25;
 	
-	/** Number of lizards */
-	private static int p = 5;
+	/** Number of lizards. Useless if setPToNOverride is true. */
+	private static int p = 15;
+	
+	/** Keep true if you want to use value of n as p. */
+	private static boolean setPToNOverride = true;
+	
+	/** Number of trees */
+	private static int t = 10;
 	
 	/** If algorithm is defined */
 	private static String algo = "DFS";
-	
-	
-
-	/** Number of trees */
-	private static int t = 3;
 
 	public static void main(String[] args) {
 
@@ -69,7 +70,7 @@ public class NurseryGenerator {
 			for(int i = 0; i < t; i++)
 			{
 				NurseryGridPoint treePoint = freeSpaces.remove(rand.nextInt(freeSpaces.size()));
-				nursery[treePoint.getX()][treePoint.getY()] = 2;
+				nursery[treePoint.x][treePoint.y] = 2;
 			}
 
 		}
@@ -77,6 +78,9 @@ public class NurseryGenerator {
 			// TODO
 			System.out.println("Randomly generating values.");
 		}
+		
+		if(setPToNOverride)
+			p = n;
 
 		// Print solution to console as well as file
 		PrintWriter writer = null;
@@ -85,10 +89,13 @@ public class NurseryGenerator {
 			writer = new PrintWriter(FILE_TESTINPUT, "UTF-8");
 			
 			System.out.println("\nGenerating "+FILE_TESTINPUT+".");
+			
 			System.out.println(algo);
 			writer.println(algo);
+			
 			System.out.println(n);
 			writer.println(n);
+			
 			System.out.println(p);
 			writer.println(p);
 			

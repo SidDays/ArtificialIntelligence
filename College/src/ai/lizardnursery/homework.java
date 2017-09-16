@@ -10,7 +10,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
@@ -39,13 +38,19 @@ public class homework {
 
 	private static final String FILE_INPUT = "input.txt";
 	private static final String FILE_OUTPUT = "output.txt";
+
+	/**
+	 * If true, prints node information to the console.
+	 * TODO Remember to turn it off before submission!
+	 */
 	private static final boolean DEBUG_MODE = true;
-	
+
 	/**
 	 * If true, prints the computation time to the console.
+	 * TODO Remember to turn it off before submission!
 	 */
 	private static final boolean MEASURE_TIME = true;
-	
+
 	/**
 	 * The maximum number of iterations for Simulated Annealing.
 	 */
@@ -64,18 +69,18 @@ public class homework {
 	/**
 	 * The number of baby lizards.
 	 */
-	private static int p;
+	public static int p;
 
 	/**
 	 * Stores the initial nursery state that becomes the first node.
 	 */
 	private static int[][] nursery;
-	
+
 	/**
 	 * When the solution is found, place it into this matrix.
 	 */
 	private static int[][] solution;
-	
+
 	/**
 	 * Stores the locations of all the trees on the grid.
 	 */
@@ -97,17 +102,17 @@ public class homework {
 	private static NurseryNode insertLizard(NurseryNode node, NurseryGridPoint pointFree)
 	{
 		NurseryNode newNode = new NurseryNode(node); // copy Constructor
-		newNode.setDepth(node.getDepth() + 1);
+		newNode.depth = node.depth + 1;
 
-		List<NurseryGridPoint> availablePointsForThis = newNode.getAvailablePoints();
+		List<NurseryGridPoint> availablePointsForThis = newNode.availablePoints;
 		availablePointsForThis.remove(pointFree);
 
 		// Place a lizard
-		int xpos = pointFree.getX();
-		int ypos = pointFree.getY();
+		int xpos = pointFree.x;
+		int ypos = pointFree.y;
 		/*int[][] nursery = newNode.getNursery();
 		nursery[xpos][ypos] = 1;*/
-		
+
 		newNode.lizardPoints = new ArrayList<>(node.lizardPoints);
 		newNode.lizardPoints.add(new NurseryGridPoint(xpos, ypos));
 
@@ -233,24 +238,34 @@ public class homework {
 		while(!bfsQueue.isEmpty())
 		{
 			NurseryNode nodeCurrent = bfsQueue.remove();
-			
+
 			if(DEBUG_MODE)
 				System.out.println(nodeCurrent);
 
 			// Goal-Test: number of lizards = depth of child node
-			if(nodeCurrent.getDepth() == p)
+			if(nodeCurrent.depth == p)
 			{
-				finishBfsAndDfs(nodeCurrent);
+				finishBfsAndDfs(nodeCurrent); // includes isSolvable
 
 				break;
 			}
 
-			// create child nodes for all the free available points.
-			List<NurseryGridPoint> availablePointsCurrent = nodeCurrent.getAvailablePoints();
+			// Check if it's pointless to proceed: lizardsLeft > availablePoints
+			int lizardsLeft = homework.p - nodeCurrent.depth;
 
-			for(NurseryGridPoint pointFreeCurrent : availablePointsCurrent)
+			if(lizardsLeft > nodeCurrent.availablePoints.size())
 			{
-				bfsQueue.add(insertLizard(nodeCurrent, pointFreeCurrent));
+				// if(DEBUG_MODE) System.out.println("lizardsLeft > availablePoints. Skipping...");
+
+			} else {
+
+				// create child nodes for all the free available points.
+				List<NurseryGridPoint> availablePointsCurrent = nodeCurrent.availablePoints;
+
+				for(NurseryGridPoint pointFreeCurrent : availablePointsCurrent)
+				{
+					bfsQueue.add(insertLizard(nodeCurrent, pointFreeCurrent));
+				}
 			}
 		}
 
@@ -275,27 +290,33 @@ public class homework {
 		while(!dfsStack.isEmpty())
 		{
 			NurseryNode nodeCurrent = dfsStack.removeFirst();
-			
+
 			if(DEBUG_MODE)
 				System.out.println(nodeCurrent);
 
 			// Goal-Test: number of lizards = depth of child node
-			if(nodeCurrent.getDepth() == p)
+			if(nodeCurrent.depth == p)
 			{
 				finishBfsAndDfs(nodeCurrent);
 
 				break;
 			}
+			
+			// Check if it's pointless to proceed: lizardsLeft > availablePoints
+			int lizardsLeft = homework.p - nodeCurrent.depth;
 
-			// create child nodes for all the free available points.
-			List<NurseryGridPoint> availablePointsCurrent = nodeCurrent.getAvailablePoints();
+			if (lizardsLeft > nodeCurrent.availablePoints.size()) {
+				// if (DEBUG_MODE) System.out.println("lizardsLeft > availablePoints. Skipping...");
 
-			for(NurseryGridPoint pointFreeCurrent : availablePointsCurrent)
-			{
-				dfsStack.addFirst(insertLizard(nodeCurrent, pointFreeCurrent));
+			} else {
+				// create child nodes for all the free available points.
+				List<NurseryGridPoint> availablePointsCurrent = nodeCurrent.availablePoints;
+
+				for (NurseryGridPoint pointFreeCurrent : availablePointsCurrent) {
+					dfsStack.addFirst(insertLizard(nodeCurrent, pointFreeCurrent));
+				}
 			}
 		}
-
 
 		// Finished
 		if(!isSolvable) {
@@ -310,10 +331,10 @@ public class homework {
 	{
 		List<NurseryGridPoint> availablePoints = new ArrayList<>();
 		List<NurseryGridPoint> lizardPoints = new ArrayList<>();
-		
+
 		/** Initial temperature */
 		double temp = 100;
-		
+
 		// First, populate availablePoints
 		for(int i = 0; i < nursery.length; i++)
 		{
@@ -336,7 +357,7 @@ public class homework {
 				// Important - make sure to change the nursery as well!
 				NurseryGridPoint point = availablePoints.remove(0);
 				lizardPoints.add(point);
-				nursery[point.getX()][point.getY()] = 1;
+				nursery[point.x][point.y] = 1;
 			}
 
 			// Compute its energy
@@ -351,11 +372,12 @@ public class homework {
 		}
 		else {
 			// TODO Failed!!
+			// TODO move this elsewhere
 		}
 
-		
+
 	}
-	
+
 	/**
 	 * Compute the energy for a given state in Simulated Annealing.
 	 * 
@@ -366,23 +388,24 @@ public class homework {
 	private static double energy()
 	{
 		double energy = -1;
-		
+
 		// TODO
 		
+
 		return energy;
 	}
-	
+
 	/**
 	 * The schedule function for simulated annealing.
 	 * Default schedules are usually 1/log(n).
-	 * @param time
+	 * @param time The number of iterations
 	 * @return
 	 */
 	private static double tempSchedule(int time)
 	{
 		return 1.0/Math.log(time);
 	}
-	
+
 	/**
 	 * This function is called when a solution is found using
 	 * either BFS or DFS.
@@ -394,15 +417,15 @@ public class homework {
 		// Print solution to console as well as file
 		PrintWriter writer = null;
 		try{
-			
+
 			writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
-			
+
 			System.out.println("OK");
 			writer.println("OK");
-			
+
 			/*printMatrix(nodeCurrent.getNursery());
 			writer.print(matrixAsString(nodeCurrent.getNursery()));*/
-			
+
 			// Reconstruct solution
 			solution = new int[n][n];
 			for(int i = 0; i < n; i ++)
@@ -412,19 +435,19 @@ public class homework {
 					solution[i][j] = 0;
 				}
 			}
-			
+
 			for(NurseryGridPoint point : treePoints)
 			{
-				solution[point.getX()][point.getY()] = 2;
+				solution[point.x][point.y] = 2;
 			}
 			for(NurseryGridPoint point : nodeCurrent.lizardPoints)
 			{
-				solution[point.getX()][point.getY()] = 1;
+				solution[point.x][point.y] = 1;
 			}
-			
+
 			printMatrix(solution);
 			writer.print(matrixAsString(solution));
-			
+
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -470,7 +493,7 @@ public class homework {
 	public static void main(String[] args) 
 	{
 		Scanner sc;
-		
+
 		long timeStart = System.nanoTime();
 
 		// Read contents of input file
@@ -494,7 +517,7 @@ public class homework {
 				for(int j = 0; j < n; j++)
 				{
 					nursery[i][j] = Integer.parseInt(String.valueOf(row.charAt(j)));
-					
+
 					if(nursery[i][j] == 2)
 						treePoints.add(new NurseryGridPoint(i, j));
 				}
@@ -529,9 +552,10 @@ public class homework {
 		if(MEASURE_TIME)
 		{
 			long timeEnd = System.nanoTime();
-			
-			System.out.println("Completed in "+
-			TimeUnit.NANOSECONDS.toSeconds(timeEnd-timeStart)+"s");
+
+			System.out.println("\nCompleted in "+
+					// TimeUnit.NANOSECONDS.toSeconds(timeEnd-timeStart)
+					(TimeUnit.MILLISECONDS.convert(timeEnd-timeStart, TimeUnit.NANOSECONDS) / 1000.0)+" seconds.");
 		}
 	}
 
@@ -544,7 +568,7 @@ public class homework {
 class NurseryGridPoint
 {
 	/** The location of this point on the grid. */
-	private int x = -1, y = -1;
+	public int x = -1, y = -1;
 
 	public NurseryGridPoint(int x, int y)
 	{
@@ -552,19 +576,6 @@ class NurseryGridPoint
 		this.y = y;
 	}
 
-	/**
-	 * @return the x
-	 */
-	public int getX() {
-		return x;
-	}
-
-	/**
-	 * @return the y
-	 */
-	public int getY() {
-		return y;
-	}
 
 	/**
 	 * Override the equals method of NurseryGridPoint, so that
@@ -617,36 +628,15 @@ class NurseryGridPoint
  */
 class NurseryNode
 {	
-	private List<NurseryGridPoint> availablePoints;
-	
-	public List<NurseryGridPoint> lizardPoints; // lmao it's public :(
+	public List<NurseryGridPoint> availablePoints;
 
-	/**
-	 * @return the availablePoints
-	 */
-	public List<NurseryGridPoint> getAvailablePoints() {
-		return availablePoints;
-	}
+	public List<NurseryGridPoint> lizardPoints; // lmao it's public :(
 
 	/**
 	 * Depth of the search tree. Also indicates the number of lizards, and can
 	 * be used as a goal test.
 	 */
-	private int depth = 0;
-
-	/**
-	 * @return the depth
-	 */
-	public int getDepth() {
-		return depth;
-	}
-
-	/**
-	 * @param depth the depth to set
-	 */
-	public void setDepth(int depth) {
-		this.depth = depth;
-	}
+	public int depth = 0;
 
 	/**
 	 * Create a blank NurseryState.
@@ -655,7 +645,7 @@ class NurseryNode
 	{
 		// Initialize blank availablePoints
 		availablePoints = new ArrayList<>();
-		
+
 		// New node contains no lizards
 		lizardPoints = new ArrayList<>();
 	}
@@ -698,7 +688,20 @@ class NurseryNode
 
 	public String toString()
 	{
-		return String.format("depth = %d, %d availablePoints",
-				depth, availablePoints.size());
+
+		// With spaces
+		StringBuffer sb = new StringBuffer();
+		for(int i = 0; i < depth; i++)
+			sb.append(" ");
+		sb.append(String.format("%d/%d: %d left, %d available",
+				depth, homework.p, (homework.p-lizardPoints.size()), availablePoints.size()));
+
+		return sb.toString();
+
+		// Without spaces
+
+		/*return String.format("depth = %d/%d, %d availablePoints",
+				depth, homework.p, availablePoints.size());
+		 */
 	}
 }
