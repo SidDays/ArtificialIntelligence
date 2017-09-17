@@ -623,11 +623,6 @@ public class homework {
 	}
 
 	/**
-	 * Parameters for simulated annealing
-	 */
-	private static final double cParam = 1, dParam = 1;
-
-	/**
 	 * The schedule function for simulated annealing.
 	 * Default schedules are usually 1/log(n).
 	 * @param time The number of iterations
@@ -635,6 +630,7 @@ public class homework {
 	 */
 	private static double tempSchedule(int time)
 	{
+		double cParam = 4, dParam = 1;
 		return cParam/Math.log(time+dParam);
 	}
 
