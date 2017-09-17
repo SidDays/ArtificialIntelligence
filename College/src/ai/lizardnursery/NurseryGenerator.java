@@ -15,25 +15,25 @@ public class NurseryGenerator {
 	private static final String FILE_TESTINPUT = "input.txt";
 	
 	/** If randomly picking n */
-	private static final int N_LIMIT = 15;
+	// private static final int N_LIMIT = 15;
 	
 	/** If randomly picking an algorithm */
-	private static final String ALGOS[] = {"DFS", "BFS", "SA"};
+	// private static final String ALGOS[] = {"DFS", "BFS", "SA"};
 	
 	/** Keep true if you want to use the values defined below. */
 	private static boolean useSetValues = true;
 	
 	/** Side of nursery grid */
-	private static int n = 4;
+	private static int n = 27;
 	
 	/** Number of lizards. Useless if setPToNOverride is true. */
-	private static int p = 4;
+	private static int p = 30;
 	
 	/** Keep true if you want to use value of n as p. */
 	private static boolean setPToNOverride = true;
 	
 	/** Number of trees */
-	private static int t = 0;
+	private static int t = 5;
 	
 	/** If algorithm is defined */
 	private static String algo = "SA";

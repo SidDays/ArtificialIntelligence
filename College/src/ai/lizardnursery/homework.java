@@ -78,11 +78,6 @@ public class homework {
 	private static int[][] nursery;
 
 	/**
-	 * When the solution is found, place it into this matrix.
-	 */
-	private static int[][] solution;
-
-	/**
 	 * Stores the locations of all the trees on the grid.
 	 */
 	private static List<NurseryGridPoint> treePoints;
@@ -227,8 +222,7 @@ public class homework {
 	 * Updates the nursery matrix to a given configuration
 	 * @param node
 	 */
-	@SuppressWarnings("unused")
-	private static void updateNursery(NurseryNode node)
+	private static void updateNurseryMatrix(NurseryNode node)
 	{
 		for(int i = 0; i < n; i++)
 			for(int j = 0; j < n; j++)
@@ -265,7 +259,7 @@ public class homework {
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.depth == p)
 			{
-				finishSuccessBFSAndDFS(nodeCurrent); // includes isSolvable
+				finishSuccess(nodeCurrent); // includes isSolvable
 
 				break;
 			}
@@ -317,7 +311,7 @@ public class homework {
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.depth == p)
 			{
-				finishSuccessBFSAndDFS(nodeCurrent);
+				finishSuccess(nodeCurrent);
 
 				break;
 			}
@@ -353,89 +347,104 @@ public class homework {
 
 		// Uses the static nursery as its map
 		NurseryNode node = new NurseryNode(nursery);
+		
+		// If no trees, p must be < n
+		if(treePoints.size() > 0 || (treePoints.size() == 0 && p <= n)) {
 
-		// If a solution is possible at all
-		if(p <= node.availablePoints.size()) {
+			// If a solution is possible at all
+			if(p <= node.availablePoints.size()) {
 
-			// For the initial state, fill in p availablePoints randomly with lizards
-			Collections.shuffle(node.availablePoints);
-			for(int i = 0; i < p; i++)
-			{
-				// Important - make sure to change the nursery as well!
-				NurseryGridPoint point = node.availablePoints.remove(0);
-				node.lizardPoints.add(point);
-				nursery[point.x][point.y] = 1;
-			}
-
-			// Compute its energy
-			int energyCurrent = energy(node), energyNew, deltaE;
-			double badAcceptProbability;
-
-			// Start Simulated Annealing
-			int time = 1;
-			NurseryNode nodeNew = null;
-			double temp = tempSchedule(time);
-
-			while(temp > 0 || time < MAX_SA_TIME) // TODO add condition to break after 4.
-			{
-				// Pick a random successor state TODO slightly modify the first one
-				nodeNew = new NurseryNode(node);
-				nodeNew.depth = node.depth + 1;
-
-				NurseryGridPoint lizardToMove = nodeNew.lizardPoints.remove(randomizer.nextInt(p));
-				if(DEBUG_MODE) System.out.println("Randomly picked lizard "+lizardToMove);
-
-				NurseryGridPoint spotForMe = nodeNew.availablePoints
-						.remove(randomizer.nextInt(nodeNew.availablePoints.size()));
-				if(DEBUG_MODE) System.out.println("Randomly picked spot "+spotForMe);
-
-				// Swap these
-				nodeNew.lizardPoints.add(spotForMe);
-				nodeNew.availablePoints.add(lizardToMove);
-
-				energyNew = energy(nodeNew);
-
-				if(energyNew == 0)
+				// For the initial state, fill in p availablePoints randomly with lizards
+				Collections.shuffle(node.availablePoints);
+				for(int i = 0; i < p; i++)
 				{
-					// TODO Stop processing! Yay!
-
-					System.out.println("OK");
-
-					break;
+					// Important - make sure to change the nursery as well!
+					NurseryGridPoint point = node.availablePoints.remove(0);
+					node.lizardPoints.add(point);
+					nursery[point.x][point.y] = 1;
 				}
-				else
+
+				// Compute its energy
+				int energyCurrent = energyConflicts(node), energyNew, deltaE;
+				double badAcceptProbability;
+
+				// Start Simulated Annealing
+				int time = 1;
+				NurseryNode nodeNew = null;
+				double temp = tempSchedule(time);
+
+				while(temp > 0 || time < MAX_SA_TIME) // TODO add condition to break after 4:30 minutes!
 				{
-					deltaE = energyNew - energyCurrent;
+					if(DEBUG_MODE) System.out.println("\nIteration "+time);
+					
+					// Pick a random successor state TODO slightly modify the first one
+					nodeNew = new NurseryNode(node);
+					nodeNew.depth = node.depth + 1;
 
-					temp = tempSchedule(time);			
+					NurseryGridPoint lizardToMove = nodeNew.lizardPoints.remove(randomizer.nextInt(p));
+					if(DEBUG_MODE) System.out.println("Randomly picked lizard "+lizardToMove);
 
-					if(DEBUG_MODE) System.out.format("deltaE = %d - %d = %d, T = %f\n", energyNew, energyCurrent, deltaE, temp);
+					NurseryGridPoint spotForMe = nodeNew.availablePoints
+							.remove(randomizer.nextInt(nodeNew.availablePoints.size()));
+					if(DEBUG_MODE) System.out.println("Randomly picked spot "+spotForMe);
 
-					if(deltaE > 0) {
-						badAcceptProbability = Math.exp(-deltaE/temp);
-						
-						if(Math.random() < badAcceptProbability)
-						{
-							// accept it
-							node = nodeNew;
+					// Swap these
+					nodeNew.lizardPoints.add(spotForMe);
+					nodeNew.availablePoints.add(lizardToMove);
 
-							if(DEBUG_MODE) System.out.format("Bad state accepted (%2.2f%)", badAcceptProbability);
+					energyNew = energyConflicts(nodeNew);
+
+					if(energyNew == 0)
+					{
+						// Stop processing! Yay!
+						finishSuccess(nodeNew);
+
+						break;
+					}
+					else
+					{
+						deltaE = energyNew - energyCurrent;
+
+						temp = tempSchedule(time);			
+
+						if(DEBUG_MODE) System.out.format("deltaE = %d - %d = %d, T = %f\n", energyNew, energyCurrent, deltaE, temp);
+
+						if(deltaE >= 0) {
+							badAcceptProbability = Math.exp(-deltaE/temp);
+
+							if(Math.random() < badAcceptProbability)
+							{
+								// accept it since probability satisfied
+								node = nodeNew;
+								energyCurrent = energyNew;
+
+								if(DEBUG_MODE) System.out.format("Bad state accepted (%2.4f%%)\n", badAcceptProbability*100);
+							}
+							else {
+								// reject it
+
+								if(DEBUG_MODE) System.out.format("Bad state rejected (%2.4f%%)\n", badAcceptProbability*100);
+							}
 						}
 						else {
-							// reject it
-
-							if(DEBUG_MODE) System.out.format("Bad state rejected (%2.2f%)", badAcceptProbability);
+							// good! accept it anyway
+							node = nodeNew;
+							energyCurrent = energyNew;
+							
+							if(DEBUG_MODE) System.out.println("Good state accepted!");
 						}
 					}
-				}
 
-				time++;
+					time++;
+				}
+			}
+			else {
+				if(DEBUG_MODE) System.out.format("Lizards (%d) more than availablePoints (%d).\n", p, node.availablePoints.size());
+				finishFailure();
 			}
 		}
 		else {
-			// TODO Failed!!
-			// TODO move this elsewhere
-			if(DEBUG_MODE) System.out.format("Lizards (%d) more than availablePoints (%d).\n", p, node.availablePoints.size());
+			if(DEBUG_MODE) System.out.println("No trees, but p > n.");
 			finishFailure();
 		}
 
@@ -449,7 +458,7 @@ public class homework {
 	 * 
 	 * By default, computes the energy of the current nursery.
 	 */
-	private static int energy(NurseryNode node)
+	private static int energyConflicts(NurseryNode node)
 	{
 		int conflictingLizards = 0;
 		boolean thisLizardConflicts;
@@ -603,11 +612,12 @@ public class homework {
 			
 			}
 		}
-		
-		// TODO Delete this later
-		updateNursery(node);
-		printMatrix(nursery);
-		System.out.println(conflictingLizards+" conflicting lizard(s).\n");
+
+		if (DEBUG_MODE) {
+			// updateNurseryMatrix(node);
+			// printMatrix(nursery);
+			System.out.println(conflictingLizards + " conflicting lizard(s).");
+		}
 
 		return conflictingLizards;
 	}
@@ -629,10 +639,10 @@ public class homework {
 	}
 
 	/**
-	 * This function is called when a solution is found using
-	 * either BFS or DFS.
+	 * When a solution is found, update the nursery matrix to contain the solution.
+	 * Then, print "OK" and the solution to the output file.
 	 */
-	private static void finishSuccessBFSAndDFS(NurseryNode nodeCurrent)
+	private static void finishSuccess(NurseryNode nodeCurrent)
 	{
 		isSolvable = true;
 
@@ -645,30 +655,12 @@ public class homework {
 			System.out.println("OK");
 			writer.println("OK");
 
-			/*printMatrix(nodeCurrent.getNursery());
-			writer.print(matrixAsString(nodeCurrent.getNursery()));*/
-
 			// Reconstruct solution
-			solution = new int[n][n];
-			for(int i = 0; i < n; i ++)
-			{
-				for(int j = 0; j < n; j++)
-				{
-					solution[i][j] = 0;
-				}
-			}
-
-			for(NurseryGridPoint point : treePoints)
-			{
-				solution[point.x][point.y] = 2;
-			}
-			for(NurseryGridPoint point : nodeCurrent.lizardPoints)
-			{
-				solution[point.x][point.y] = 1;
-			}
-
-			printMatrix(solution);
-			writer.print(matrixAsString(solution));
+			updateNurseryMatrix(nodeCurrent);
+			
+			// Print solution
+			printMatrix(nursery);
+			writer.print(matrixAsString(nursery));
 
 
 		} catch (IOException e) {
@@ -678,7 +670,10 @@ public class homework {
 				writer.close();
 		}
 	}
-
+	
+	/**
+	 * Prints fail to OUTPUT.txt
+	 */
 	private static void finishFailure()
 	{
 		isSolvable = false;
