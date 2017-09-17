@@ -10,6 +10,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
@@ -54,7 +55,7 @@ public class homework {
 	/**
 	 * The maximum number of iterations for Simulated Annealing.
 	 */
-	private static final int MAX_SA_TIME = 1000;
+	private static final int MAX_SA_TIME = Integer.MAX_VALUE;
 
 	/**
 	 * The algorithm to use: BFS, DFS or SA.
@@ -221,10 +222,29 @@ public class homework {
 		return newNode;
 	}
 
+
+	/**
+	 * Updates the nursery matrix to a given configuration
+	 * @param node
+	 */
+	@SuppressWarnings("unused")
+	private static void updateNursery(NurseryNode node)
+	{
+		for(int i = 0; i < n; i++)
+			for(int j = 0; j < n; j++)
+				nursery[i][j] = 0;
+
+		for(NurseryGridPoint pt : treePoints)
+			nursery[pt.x][pt.y] = 2;
+
+		for(NurseryGridPoint pt : node.lizardPoints)
+			nursery[pt.x][pt.y] = 1;
+	}
+
 	/**
 	 * Breadth-First Search
 	 */
-	private static void solveBfs()
+	private static void solveBFS()
 	{
 		/**
 		 * Frontier for Breadth-First Search.
@@ -245,7 +265,7 @@ public class homework {
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.depth == p)
 			{
-				finishBfsAndDfs(nodeCurrent); // includes isSolvable
+				finishSuccessBFSAndDFS(nodeCurrent); // includes isSolvable
 
 				break;
 			}
@@ -272,14 +292,14 @@ public class homework {
 
 		// Finished
 		if(!isSolvable) {
-			System.out.println("FAIL");
+			finishFailure();
 		}
 	}
 
 	/**
 	 * Depth-First Search
 	 */
-	private static void solveDfs()
+	private static void solveDFS()
 	{
 		Deque<NurseryNode> dfsStack = new LinkedList<>();
 
@@ -297,11 +317,11 @@ public class homework {
 			// Goal-Test: number of lizards = depth of child node
 			if(nodeCurrent.depth == p)
 			{
-				finishBfsAndDfs(nodeCurrent);
+				finishSuccessBFSAndDFS(nodeCurrent);
 
 				break;
 			}
-			
+
 			// Check if it's pointless to proceed: lizardsLeft > availablePoints
 			int lizardsLeft = homework.p - nodeCurrent.depth;
 
@@ -320,59 +340,103 @@ public class homework {
 
 		// Finished
 		if(!isSolvable) {
-			System.out.println("FAIL");
+			finishFailure();
 		}
 	}
 
 	/**
 	 * Simulated annealing TODO
 	 */
-	private static void solveSa()
+	private static void solveSA()
 	{
-		List<NurseryGridPoint> availablePoints = new ArrayList<>();
-		List<NurseryGridPoint> lizardPoints = new ArrayList<>();
+		Random randomizer = new Random();
 
-		/** Initial temperature */
-		double temp = 100;
-
-		// First, populate availablePoints
-		for(int i = 0; i < nursery.length; i++)
-		{
-			for(int j = 0; j < nursery[0].length; j++)
-			{
-				if(nursery[i][j] == 0) {
-					NurseryGridPoint pt = new NurseryGridPoint(i, j);
-					availablePoints.add(pt);
-				}
-			}
-		}
+		// Uses the static nursery as its map
+		NurseryNode node = new NurseryNode(nursery);
 
 		// If a solution is possible at all
-		if(p >= availablePoints.size()) {
+		if(p <= node.availablePoints.size()) {
 
 			// For the initial state, fill in p availablePoints randomly with lizards
-			Collections.shuffle(availablePoints);
+			Collections.shuffle(node.availablePoints);
 			for(int i = 0; i < p; i++)
 			{
 				// Important - make sure to change the nursery as well!
-				NurseryGridPoint point = availablePoints.remove(0);
-				lizardPoints.add(point);
+				NurseryGridPoint point = node.availablePoints.remove(0);
+				node.lizardPoints.add(point);
 				nursery[point.x][point.y] = 1;
 			}
 
 			// Compute its energy
-			double energyCurrent, energyNew;
+			int energyCurrent = energy(node), energyNew, deltaE;
+			double badAcceptProbability;
 
 			// Start Simulated Annealing
 			int time = 1;
-			while(temp > 0 || time < MAX_SA_TIME) {
+			NurseryNode nodeNew = null;
+			double temp = tempSchedule(time);
 
-				// pick a random successor state
+			while(temp > 0 || time < MAX_SA_TIME) // TODO add condition to break after 4.
+			{
+				// Pick a random successor state TODO slightly modify the first one
+				nodeNew = new NurseryNode(node);
+				nodeNew.depth = node.depth + 1;
+
+				NurseryGridPoint lizardToMove = nodeNew.lizardPoints.remove(randomizer.nextInt(p));
+				if(DEBUG_MODE) System.out.println("Randomly picked lizard "+lizardToMove);
+
+				NurseryGridPoint spotForMe = nodeNew.availablePoints
+						.remove(randomizer.nextInt(nodeNew.availablePoints.size()));
+				if(DEBUG_MODE) System.out.println("Randomly picked spot "+spotForMe);
+
+				// Swap these
+				nodeNew.lizardPoints.add(spotForMe);
+				nodeNew.availablePoints.add(lizardToMove);
+
+				energyNew = energy(nodeNew);
+
+				if(energyNew == 0)
+				{
+					// TODO Stop processing! Yay!
+
+					System.out.println("OK");
+
+					break;
+				}
+				else
+				{
+					deltaE = energyNew - energyCurrent;
+
+					temp = tempSchedule(time);			
+
+					if(DEBUG_MODE) System.out.format("deltaE = %d - %d = %d, T = %f\n", energyNew, energyCurrent, deltaE, temp);
+
+					if(deltaE > 0) {
+						badAcceptProbability = Math.exp(-deltaE/temp);
+						
+						if(Math.random() < badAcceptProbability)
+						{
+							// accept it
+							node = nodeNew;
+
+							if(DEBUG_MODE) System.out.format("Bad state accepted (%2.2f%)", badAcceptProbability);
+						}
+						else {
+							// reject it
+
+							if(DEBUG_MODE) System.out.format("Bad state rejected (%2.2f%)", badAcceptProbability);
+						}
+					}
+				}
+
+				time++;
 			}
 		}
 		else {
 			// TODO Failed!!
 			// TODO move this elsewhere
+			if(DEBUG_MODE) System.out.format("Lizards (%d) more than availablePoints (%d).\n", p, node.availablePoints.size());
+			finishFailure();
 		}
 
 
@@ -385,15 +449,173 @@ public class homework {
 	 * 
 	 * By default, computes the energy of the current nursery.
 	 */
-	private static double energy()
+	private static int energy(NurseryNode node)
 	{
-		double energy = -1;
+		int conflictingLizards = 0;
+		boolean thisLizardConflicts;
 
-		// TODO
+		for(NurseryGridPoint pointLizard : node.lizardPoints)
+		{
+			
+			// Place a lizard
+			int xpos = pointLizard.x;
+			int ypos = pointLizard.y;
+			thisLizardConflicts = false;
+
+			int xlos, ylos;
+
+			// Propogate the lizard's LOS and check for conflicts!
+			xlos = xpos; ylos = ypos;
+			
+
+			// Left side
+			while(--xlos >= 0)
+			{		
+				if(nursery[xlos][ylos] == 2) // Break if it's a tree
+					break;
+				NurseryGridPoint pointPotentialConflict = new NurseryGridPoint(xlos, ylos);
+				if(node.lizardPoints.contains(pointPotentialConflict)) {
+					conflictingLizards++; thisLizardConflicts = true;
+					break;
+				}
+			}
+			xlos = xpos; ylos = ypos;
+			if(!thisLizardConflicts) {
+				
+				// Right side
+				while(++xlos < n)
+				{		
+					if(nursery[xlos][ylos] == 2) // Break if it's a tree
+						break;
+					NurseryGridPoint pointPotentialConflict = new NurseryGridPoint(xlos, ylos);
+					if(node.lizardPoints.contains(pointPotentialConflict)) {
+						conflictingLizards++; thisLizardConflicts = true;
+						break;
+					}
+				}
+				
+				xlos = xpos; ylos = ypos;
+				if(!thisLizardConflicts) {
+					
+					// Top side
+					while(++ylos < n)
+					{		
+						if(nursery[xlos][ylos] == 2) // Break if it's a tree
+							break;
+						NurseryGridPoint pointPotentialConflict = new NurseryGridPoint(xlos, ylos);
+						if(node.lizardPoints.contains(pointPotentialConflict)) {
+							conflictingLizards++; thisLizardConflicts = true;
+							break;
+						}
+					}
+					
+					xlos = xpos; ylos = ypos;
+					if(!thisLizardConflicts) {
+						
+						// Bottom side
+						while(--ylos >= 0)
+						{		
+							if(nursery[xlos][ylos] == 2) // Break if it's a tree
+								break;
+							NurseryGridPoint pointPotentialConflict = new NurseryGridPoint(xlos, ylos);
+							if(node.lizardPoints.contains(pointPotentialConflict)) {
+								conflictingLizards++; thisLizardConflicts = true;
+								break;
+							}
+						}
+						
+						xlos = xpos; ylos = ypos;
+						if(!thisLizardConflicts) {
+							
+							// Top-left side
+							while(--xlos >= 0 && ++ylos < n)
+							{		
+								if(nursery[xlos][ylos] == 2) // Break if it's a tree
+									break;
+								NurseryGridPoint pointPotentialConflict = new NurseryGridPoint(xlos, ylos);
+								if(node.lizardPoints.contains(pointPotentialConflict)) {
+									conflictingLizards++; thisLizardConflicts = true;
+									break;
+								}
+							}
+							
+							xlos = xpos; ylos = ypos;
+							if(!thisLizardConflicts) {
+								
+								// Top-right side
+								while(++xlos < n && ++ylos < n)
+								{		
+									if(nursery[xlos][ylos] == 2) // Break if it's a tree
+										break;
+									NurseryGridPoint pointPotentialConflict = new NurseryGridPoint(xlos, ylos);
+									if(node.lizardPoints.contains(pointPotentialConflict)) {
+										conflictingLizards++; thisLizardConflicts = true;
+										break;
+									}
+								}
+								
+								xlos = xpos; ylos = ypos;
+								if(!thisLizardConflicts) {
+									
+									// Bottom-left side
+									while(--xlos >= 0 && --ylos >= 0)
+									{		
+										if(nursery[xlos][ylos] == 2) // Break if it's a tree
+											break;
+										NurseryGridPoint pointPotentialConflict = new NurseryGridPoint(xlos, ylos);
+										if(node.lizardPoints.contains(pointPotentialConflict)) {
+											conflictingLizards++; thisLizardConflicts = true;
+											break;
+										}
+									}
+									
+									xlos = xpos; ylos = ypos;
+									if(!thisLizardConflicts) {
+										
+										// Bottom-right side
+										while(++xlos < n && --ylos >= 0)
+										{		
+											if(nursery[xlos][ylos] == 2) // Break if it's a tree
+												break;
+											NurseryGridPoint pointPotentialConflict = new NurseryGridPoint(xlos, ylos);
+											if(node.lizardPoints.contains(pointPotentialConflict)) {
+												conflictingLizards++; thisLizardConflicts = true;
+												break;
+											}
+										}
+										
+										xlos = xpos; ylos = ypos;
+										if(!thisLizardConflicts) {
+											// nothing
+										}
+										
+									}
+									
+								}
+								
+							}
+							
+						}
+						
+					}
+					
+				}
+			
+			}
+		}
 		
+		// TODO Delete this later
+		updateNursery(node);
+		printMatrix(nursery);
+		System.out.println(conflictingLizards+" conflicting lizard(s).\n");
 
-		return energy;
+		return conflictingLizards;
 	}
+
+	/**
+	 * Parameters for simulated annealing
+	 */
+	private static final double cParam = 1, dParam = 1;
 
 	/**
 	 * The schedule function for simulated annealing.
@@ -403,14 +625,14 @@ public class homework {
 	 */
 	private static double tempSchedule(int time)
 	{
-		return 1.0/Math.log(time);
+		return cParam/Math.log(time+dParam);
 	}
 
 	/**
 	 * This function is called when a solution is found using
 	 * either BFS or DFS.
 	 */
-	private static void finishBfsAndDfs(NurseryNode nodeCurrent)
+	private static void finishSuccessBFSAndDFS(NurseryNode nodeCurrent)
 	{
 		isSolvable = true;
 
@@ -448,6 +670,27 @@ public class homework {
 			printMatrix(solution);
 			writer.print(matrixAsString(solution));
 
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if(writer != null)
+				writer.close();
+		}
+	}
+
+	private static void finishFailure()
+	{
+		isSolvable = false;
+
+		// Print solution to console as well as file
+		PrintWriter writer = null;
+		try{
+
+			writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
+
+			System.out.println("FAIL");
+			writer.println("FAIL");
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -531,18 +774,18 @@ public class homework {
 			// Run the algorithm
 			if(algo.equals("BFS"))
 			{
-				solveBfs();
+				solveBFS();
 			}
 			else if(algo.equals("DFS"))
 			{
-				solveDfs();
+				solveDFS();
 			}
 			else if(algo.equals("SA"))
 			{
-				solveSa();
+				solveSA();
 			}
 			else {
-				System.out.println("FAIL");
+				finishFailure();
 			}
 
 			sc.close();
@@ -641,7 +884,7 @@ class NurseryNode
 	/**
 	 * Create a blank NurseryState.
 	 */
-	NurseryNode()
+	public NurseryNode()
 	{
 		// Initialize blank availablePoints
 		availablePoints = new ArrayList<>();
@@ -656,7 +899,7 @@ class NurseryNode
 	 * @param nurseryParam 0 indicates free position, 1 lizard and 2 tree.
 	 * Ideally, input should not have anything but 0's and 2's.
 	 */
-	NurseryNode(int[][] nurseryParam) {
+	public NurseryNode(int[][] nurseryParam) {
 		this(); // call default constructor
 
 		// this.nursery = nursery;
@@ -669,6 +912,10 @@ class NurseryNode
 					NurseryGridPoint pt = new NurseryGridPoint(i, j);
 					availablePoints.add(pt);
 				}
+				else if(nurseryParam[i][j] == 1) {
+					NurseryGridPoint pt = new NurseryGridPoint(i, j);
+					lizardPoints.add(pt);
+				}
 			}
 		}
 	}
@@ -676,14 +923,11 @@ class NurseryNode
 	/**
 	 * Copy constructor.
 	 */
-	NurseryNode(NurseryNode node)
+	public NurseryNode(NurseryNode node)
 	{
 		this.depth = node.depth;
 		this.availablePoints = new LinkedList<>(node.availablePoints);
-
-		/*this.nursery = new int[node.nursery.length][];
-		for(int i = 0; i < node.nursery.length; i++)
-			this.nursery[i] = node.nursery[i].clone();*/
+		this.lizardPoints = new LinkedList<>(node.lizardPoints);
 	}
 
 	public String toString()
