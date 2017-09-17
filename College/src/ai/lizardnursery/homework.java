@@ -15,6 +15,12 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 
+ * @author Siddhesh Karekar
+ * AI Homework 1 - Lizard Nursery Problem
+ * 
+ * Problem Description:
+ * 
  * You will write a program that will take an input file that has an arrangement
  * of trees and will output a new arrangement of lizards such that no baby
  * lizard can eat another one. To find the solution you will use the following
@@ -39,18 +45,19 @@ public class homework {
 
 	private static final String FILE_INPUT = "input.txt";
 	private static final String FILE_OUTPUT = "output.txt";
+	
+	/**
+	 * Each of the 3 algorithms automatically declares failure after this time elapses.
+	 */
+	private static final long TIMEOUT_MILLISECONDS = (long)(1000 * 60 * 4.75f);
+	
+	private static long timeStart, timeCurrent;
 
 	/**
 	 * If true, prints node information to the console.
 	 * TODO Remember to turn it off before submission!
 	 */
 	private static final boolean DEBUG_MODE = true;
-
-	/**
-	 * If true, prints the computation time to the console.
-	 * TODO Remember to turn it off before submission!
-	 */
-	private static final boolean MEASURE_TIME = true;
 
 	/**
 	 * The maximum number of iterations for Simulated Annealing.
@@ -281,6 +288,12 @@ public class homework {
 					bfsQueue.add(insertLizard(nodeCurrent, pointFreeCurrent));
 				}
 			}
+			
+			if(timeOut()) {
+				System.out.format("Timeout: %.3f seconds elapsed.\n",
+						(TimeUnit.MILLISECONDS.convert(timeCurrent-timeStart, TimeUnit.NANOSECONDS)/1000.0));
+				break;
+			}
 		}
 
 
@@ -329,6 +342,12 @@ public class homework {
 				for (NurseryGridPoint pointFreeCurrent : availablePointsCurrent) {
 					dfsStack.addFirst(insertLizard(nodeCurrent, pointFreeCurrent));
 				}
+			}
+			
+			if(timeOut()) {
+				System.out.format("Timeout: %.3f seconds elapsed.\n",
+						(TimeUnit.MILLISECONDS.convert(timeCurrent-timeStart, TimeUnit.NANOSECONDS)/1000.0));
+				break;
 			}
 		}
 
@@ -409,16 +428,17 @@ public class homework {
 
 						if(DEBUG_MODE) System.out.format("deltaE = %d - %d = %d, T = %f\n", energyNew, energyCurrent, deltaE, temp);
 
-						if(deltaE >= 0) {
-							badAcceptProbability = Math.exp(-deltaE/temp);
+						if(deltaE > 0) {
+							badAcceptProbability = Math.exp(-(double)deltaE/temp);
 
 							if(Math.random() < badAcceptProbability)
 							{
 								// accept it since probability satisfied
+								if(DEBUG_MODE) System.out.format("Bad state accepted (%2.4f%%)\n", badAcceptProbability*100); 
 								node = nodeNew;
 								energyCurrent = energyNew;
 
-								if(DEBUG_MODE) System.out.format("Bad state accepted (%2.4f%%)\n", badAcceptProbability*100);
+								
 							}
 							else {
 								// reject it
@@ -433,6 +453,13 @@ public class homework {
 							
 							if(DEBUG_MODE) System.out.println("Good state accepted!");
 						}
+					}
+					
+					if(timeOut()) {
+						System.out.format("Timeout: %.3f seconds elapsed.\n",
+								(TimeUnit.MILLISECONDS.convert(timeCurrent-timeStart, TimeUnit.NANOSECONDS)/1000.0));
+						finishFailure();
+						break;
 					}
 
 					time++;
@@ -630,7 +657,7 @@ public class homework {
 	 */
 	private static double tempSchedule(int time)
 	{
-		double cParam = 4, dParam = 1;
+		double cParam = 3.5, dParam = 1;
 		return cParam/Math.log(time+dParam);
 	}
 
@@ -723,12 +750,26 @@ public class homework {
 
 		return sb.toString();
 	}
+	
+	/**
+	 * Checks if the program is taking too long to execute
+	 * @return true if TIMEOUT_MILLISECONDS has been overshot, false if not.
+	 */
+	private static boolean timeOut()
+	{
+		timeCurrent = System.nanoTime();
+		
+		if(TimeUnit.MILLISECONDS.convert(timeCurrent-timeStart, TimeUnit.NANOSECONDS) >= TIMEOUT_MILLISECONDS)
+			return true;
+		
+		return false;
+	}
 
 	public static void main(String[] args) 
 	{
 		Scanner sc;
 
-		long timeStart = System.nanoTime();
+		timeStart = System.nanoTime();
 
 		// Read contents of input file
 		try
@@ -783,14 +824,11 @@ public class homework {
 
 		} catch (FileNotFoundException e) { }
 
-		if(MEASURE_TIME)
-		{
-			long timeEnd = System.nanoTime();
+		timeCurrent = System.nanoTime();
 
-			System.out.println("\nCompleted in "+
-					// TimeUnit.NANOSECONDS.toSeconds(timeEnd-timeStart)
-					(TimeUnit.MILLISECONDS.convert(timeEnd-timeStart, TimeUnit.NANOSECONDS) / 1000.0)+" seconds.");
-		}
+		System.out.println("\nCompleted in " +
+				(TimeUnit.MILLISECONDS.convert(timeCurrent - timeStart, TimeUnit.NANOSECONDS) / 1000.0) + " seconds.");
+
 	}
 
 }
@@ -920,7 +958,8 @@ class NurseryNode
 		this.availablePoints = new LinkedList<>(node.availablePoints);
 		this.lizardPoints = new LinkedList<>(node.lizardPoints);
 	}
-
+	
+	@Override
 	public String toString()
 	{
 
