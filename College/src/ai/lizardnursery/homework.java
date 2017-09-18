@@ -49,7 +49,7 @@ public class homework {
 	/**
 	 * Each of the 3 algorithms automatically declares failure after this time elapses.
 	 */
-	private static final long TIMEOUT_MILLISECONDS = (long)(1000 * 60 * 4.75f);
+	private static final long TIMEOUT_MILLISECONDS = (long)(1000 * 60 * 4.875f);
 	
 	private static long timeStart, timeCurrent;
 
@@ -484,7 +484,7 @@ public class homework {
 	private static double tempSchedule(int time)
 	{
 		double cParam = 3, dParam = 1, eParam = 0.5;
-		return cParam/Math.log(eParam*time+dParam);
+		return cParam/Math.log(eParam*(time+dParam));
 	}
 
 	/**

@@ -26,14 +26,12 @@ public class NurseryGenerator {
 	/** If algorithm is defined */
 	private static String algo = "SA";
 	
-	/** Keep true if you want to use value of n as p. */
-	private static boolean setPToNOverride = false;
-	
 	/** Side of nursery grid */
 	private static int n = 50;
 	
 	/** Number of lizards. Useless if setPToNOverride is true. */
 	private static int p = 50;
+	private static boolean setPToNOverride = true;
 	
 	/** Number of trees */
 	private static int t = 0;
