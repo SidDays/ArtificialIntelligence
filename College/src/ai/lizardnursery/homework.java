@@ -60,11 +60,6 @@ public class homework {
 	private static final boolean DEBUG_MODE = true;
 
 	/**
-	 * The maximum number of iterations for Simulated Annealing.
-	 */
-	private static final int MAX_SA_TIME = Integer.MAX_VALUE;
-
-	/**
 	 * The algorithm to use: BFS, DFS or SA.
 	 */
 	private static String algo;
@@ -362,8 +357,6 @@ public class homework {
 	 */
 	private static void solveSA()
 	{
-		Random randomizer = new Random();
-
 		// Uses the static nursery as its map
 		NurseryNode node = new NurseryNode(nursery);
 		
@@ -391,12 +384,15 @@ public class homework {
 				int time = 1;
 				NurseryNode nodeNew = null;
 				double temp = tempSchedule(time);
+				
+				/** Generate random lizard and free positions */
+				Random randomizer = new Random();
 
-				while(temp > 0 || time < MAX_SA_TIME) // TODO add condition to break after 4:30 minutes!
+				while(temp > 0)
 				{
 					if(DEBUG_MODE) System.out.println("\nIteration "+time);
 					
-					// Pick a random successor state TODO slightly modify the first one
+					// Pick a random successor state
 					nodeNew = new NurseryNode(node);
 					nodeNew.depth = node.depth + 1;
 
@@ -426,10 +422,11 @@ public class homework {
 
 						temp = tempSchedule(time);			
 
-						if(DEBUG_MODE) System.out.format("deltaE = %d - %d = %d, T = %f\n", energyNew, energyCurrent, deltaE, temp);
+						if(DEBUG_MODE) System.out.format("eOld = %d, eNew = %d, deltaE = %d, T = %f\n", energyNew, energyCurrent, deltaE, temp);
 
 						if(deltaE > 0) {
 							badAcceptProbability = Math.exp(-(double)deltaE/temp);
+							if(DEBUG_MODE) System.out.println("The probability is: "+ badAcceptProbability);
 
 							if(Math.random() < badAcceptProbability)
 							{
@@ -476,6 +473,18 @@ public class homework {
 		}
 
 
+	}
+
+	/**
+	 * The schedule function for simulated annealing.
+	 * Default schedules are usually 1/log(n).
+	 * @param time The number of iterations
+	 * @return
+	 */
+	private static double tempSchedule(int time)
+	{
+		double cParam = 3, dParam = 1, eParam = 0.5;
+		return cParam/Math.log(eParam*time+dParam);
 	}
 
 	/**
@@ -647,18 +656,6 @@ public class homework {
 		}
 
 		return conflictingLizards;
-	}
-
-	/**
-	 * The schedule function for simulated annealing.
-	 * Default schedules are usually 1/log(n).
-	 * @param time The number of iterations
-	 * @return
-	 */
-	private static double tempSchedule(int time)
-	{
-		double cParam = 3.5, dParam = 1;
-		return cParam/Math.log(time+dParam);
 	}
 
 	/**

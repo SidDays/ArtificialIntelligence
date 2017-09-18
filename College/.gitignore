@@ -4,8 +4,8 @@
 # Test cases
 # ---------------
 
-input.txt
-output.txt
+input*.txt
+output*.txt
 
 # ---------------
 # Eclipse related
