@@ -1,3 +1,4 @@
+// TODO Remember to remove this line and turn off DEBUG_MODE!
 package ai.lizardnursery;
 
 import java.io.File;
@@ -53,7 +54,6 @@ public class homework {
 
 	/**
 	 * If true, prints node information to the console.
-	 * TODO Remember to turn it off before submission!
 	 */
 	private static final boolean DEBUG_MODE = true;
 
@@ -217,7 +217,6 @@ public class homework {
 		return newNode;
 	}
 
-
 	/**
 	 * Updates the nursery matrix to a given configuration
 	 * @param node
@@ -253,6 +252,9 @@ public class homework {
 			bfsQueueDfsStack.add(initNode);
 		else
 			bfsQueueDfsStack.add(0, initNode);
+		
+		// Check if no trees, effectivly making it an N-Queens instance
+		boolean isNQueens = treePoints.size() == 0;
 
 		while(!bfsQueueDfsStack.isEmpty())
 		{
@@ -281,16 +283,27 @@ public class homework {
 
 				// create child nodes for all the free available points.
 				List<NurseryGridPoint> availablePointsCurrent = nodeCurrent.availablePoints;
+				
+				// If N-queens, only consider the availablePoints in the Next column
+	
+					for(NurseryGridPoint pointFreeCurrent : availablePointsCurrent)
+					{
+						if(!isNQueens ||
+								(isNQueens && pointFreeCurrent.x == nodeCurrent.lizardPoints.size()))
+						{
 
-				for(NurseryGridPoint pointFreeCurrent : availablePointsCurrent)
-				{
-					if(isBFS)
-						bfsQueueDfsStack.add(insertLizard(nodeCurrent, pointFreeCurrent));
-					else
-						bfsQueueDfsStack.add(0, insertLizard(nodeCurrent, pointFreeCurrent));
-					
-				}
+							if(isBFS)
+								bfsQueueDfsStack.add(insertLizard(nodeCurrent, pointFreeCurrent));
+							else
+								bfsQueueDfsStack.add(0, insertLizard(nodeCurrent, pointFreeCurrent));
+						}
+
+					}
+				
 			}
+			
+			// Try to free up space?
+			nodeCurrent = null;
 			
 			if(timeOut()) {
 				System.out.format("Timeout: %.3f seconds elapsed.\n",
