@@ -27,10 +27,10 @@ public class NurseryGenerator {
 	private static String algo = "SA";
 	
 	/** Side of nursery grid */
-	private static int n = 50;
+	private static int n = 25;
 	
 	/** Number of lizards. Useless if setPToNOverride is true. */
-	private static int p = 50;
+	private static int p = 5;
 	private static boolean setPToNOverride = true;
 	
 	/** Number of trees */

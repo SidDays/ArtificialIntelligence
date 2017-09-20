@@ -6,10 +6,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -43,13 +41,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class homework {
 
-	private static final String FILE_INPUT = "input.txt";
-	private static final String FILE_OUTPUT = "output.txt";
+	private static String inputFileName = "input.txt";
+	private static String outputFileName = "output.txt";
 	
 	/**
 	 * Each of the 3 algorithms automatically declares failure after this time elapses.
 	 */
-	private static final long TIMEOUT_MILLISECONDS = (long)(1000 * 60 * 4.875f);
+	private static final long TIMEOUT_MILLISECONDS = (long)(1000 * 60 * 4.75f);
 	
 	private static long timeStart, timeCurrent;
 
@@ -77,7 +75,7 @@ public class homework {
 	/**
 	 * Stores the initial nursery state that becomes the first node.
 	 */
-	private static int[][] nursery;
+	private static byte[][] nursery;
 
 	/**
 	 * Stores the locations of all the trees on the grid.
@@ -100,7 +98,7 @@ public class homework {
 	private static NurseryNode insertLizard(NurseryNode node, NurseryGridPoint pointFree)
 	{
 		NurseryNode newNode = new NurseryNode(node); // copy Constructor
-		newNode.depth = node.depth + 1;
+		// newNode.depth = node.depth + 1;
 
 		List<NurseryGridPoint> availablePointsForThis = newNode.availablePoints;
 		availablePointsForThis.remove(pointFree);
@@ -238,28 +236,34 @@ public class homework {
 	}
 
 	/**
-	 * Breadth-First Search
+	 * Breadth-First Search and Depth-First Search.
+	 * Only differ in the logic used to add elements into the list (a queue or stack, respectively.)
+	 * @param isBFS True if BFS, false if DFS.
 	 */
-	private static void solveBFS()
+	private static void solveBFSorDFS(boolean isBFS)
 	{
 		/**
-		 * Frontier for Breadth-First Search.
+		 * Frontier for Breadth-First Search as well as Depth-First Search
 		 */
-		Queue<NurseryNode> bfsQueue = new LinkedList<>();
+		List<NurseryNode> bfsQueueDfsStack = new LinkedList<>();
 
 		// create initial node
 		NurseryNode initNode = new NurseryNode(nursery);
-		bfsQueue.add(initNode);
+		if(isBFS)
+			bfsQueueDfsStack.add(initNode);
+		else
+			bfsQueueDfsStack.add(0, initNode);
 
-		while(!bfsQueue.isEmpty())
+		while(!bfsQueueDfsStack.isEmpty())
 		{
-			NurseryNode nodeCurrent = bfsQueue.remove();
+			// Always retrieve the head of the node.
+			NurseryNode nodeCurrent = bfsQueueDfsStack.remove(0);
 
 			if(DEBUG_MODE)
 				System.out.println(nodeCurrent);
 
 			// Goal-Test: number of lizards = depth of child node
-			if(nodeCurrent.depth == p)
+			if(nodeCurrent.lizardPoints.size() == p)
 			{
 				finishSuccess(nodeCurrent); // includes isSolvable
 
@@ -267,7 +271,7 @@ public class homework {
 			}
 
 			// Check if it's pointless to proceed: lizardsLeft > availablePoints
-			int lizardsLeft = homework.p - nodeCurrent.depth;
+			int lizardsLeft = homework.p - nodeCurrent.lizardPoints.size();
 
 			if(lizardsLeft > nodeCurrent.availablePoints.size())
 			{
@@ -280,7 +284,11 @@ public class homework {
 
 				for(NurseryGridPoint pointFreeCurrent : availablePointsCurrent)
 				{
-					bfsQueue.add(insertLizard(nodeCurrent, pointFreeCurrent));
+					if(isBFS)
+						bfsQueueDfsStack.add(insertLizard(nodeCurrent, pointFreeCurrent));
+					else
+						bfsQueueDfsStack.add(0, insertLizard(nodeCurrent, pointFreeCurrent));
+					
 				}
 			}
 			
@@ -299,61 +307,7 @@ public class homework {
 	}
 
 	/**
-	 * Depth-First Search
-	 */
-	private static void solveDFS()
-	{
-		Deque<NurseryNode> dfsStack = new LinkedList<>();
-
-		// create initial node
-		NurseryNode initNode = new NurseryNode(nursery);
-		dfsStack.addFirst(initNode);
-
-		while(!dfsStack.isEmpty())
-		{
-			NurseryNode nodeCurrent = dfsStack.removeFirst();
-
-			if(DEBUG_MODE)
-				System.out.println(nodeCurrent);
-
-			// Goal-Test: number of lizards = depth of child node
-			if(nodeCurrent.depth == p)
-			{
-				finishSuccess(nodeCurrent);
-
-				break;
-			}
-
-			// Check if it's pointless to proceed: lizardsLeft > availablePoints
-			int lizardsLeft = homework.p - nodeCurrent.depth;
-
-			if (lizardsLeft > nodeCurrent.availablePoints.size()) {
-				// if (DEBUG_MODE) System.out.println("lizardsLeft > availablePoints. Skipping...");
-
-			} else {
-				// create child nodes for all the free available points.
-				List<NurseryGridPoint> availablePointsCurrent = nodeCurrent.availablePoints;
-
-				for (NurseryGridPoint pointFreeCurrent : availablePointsCurrent) {
-					dfsStack.addFirst(insertLizard(nodeCurrent, pointFreeCurrent));
-				}
-			}
-			
-			if(timeOut()) {
-				System.out.format("Timeout: %.3f seconds elapsed.\n",
-						(TimeUnit.MILLISECONDS.convert(timeCurrent-timeStart, TimeUnit.NANOSECONDS)/1000.0));
-				break;
-			}
-		}
-
-		// Finished
-		if(!isSolvable) {
-			finishFailure();
-		}
-	}
-
-	/**
-	 * Simulated annealing TODO
+	 * Simulated annealing
 	 */
 	private static void solveSA()
 	{
@@ -394,7 +348,7 @@ public class homework {
 					
 					// Pick a random successor state
 					nodeNew = new NurseryNode(node);
-					nodeNew.depth = node.depth + 1;
+					// nodeNew.depth = node.depth + 1;
 
 					NurseryGridPoint lizardToMove = nodeNew.lizardPoints.remove(randomizer.nextInt(p));
 					if(DEBUG_MODE) System.out.println("Randomly picked lizard "+lizardToMove);
@@ -426,12 +380,12 @@ public class homework {
 
 						if(deltaE > 0) {
 							badAcceptProbability = Math.exp(-(double)deltaE/temp);
-							if(DEBUG_MODE) System.out.println("The probability is: "+ badAcceptProbability);
+							// if(DEBUG_MODE) System.out.format("The probability is: %.4f\n", badAcceptProbability);
 
-							if(Math.random() < badAcceptProbability)
+							if(randomizer.nextDouble() < badAcceptProbability)
 							{
 								// accept it since probability satisfied
-								if(DEBUG_MODE) System.out.format("Bad state accepted (%2.4f%%)\n", badAcceptProbability*100); 
+								if(DEBUG_MODE) System.out.format("(+) Bad state accepted (%2.4f%%)\n", badAcceptProbability*100); 
 								node = nodeNew;
 								energyCurrent = energyNew;
 
@@ -440,7 +394,7 @@ public class homework {
 							else {
 								// reject it
 
-								if(DEBUG_MODE) System.out.format("Bad state rejected (%2.4f%%)\n", badAcceptProbability*100);
+								if(DEBUG_MODE) System.out.format("(-) Bad state rejected (%2.4f%%)\n", badAcceptProbability*100);
 							}
 						}
 						else {
@@ -483,8 +437,8 @@ public class homework {
 	 */
 	private static double tempSchedule(int time)
 	{
-		double cParam = 3, dParam = 1, eParam = 0.5;
-		return cParam/Math.log(eParam*(time+dParam));
+		double cParam = 3.1, dParam = 1, eParam = 5;
+		return cParam/Math.log(eParam*(time)+dParam);
 	}
 
 	/**
@@ -670,7 +624,7 @@ public class homework {
 		PrintWriter writer = null;
 		try{
 
-			writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
+			writer = new PrintWriter(outputFileName, "UTF-8");
 
 			System.out.println("OK");
 			writer.println("OK");
@@ -702,7 +656,7 @@ public class homework {
 		PrintWriter writer = null;
 		try{
 
-			writer = new PrintWriter(FILE_OUTPUT, "UTF-8");
+			writer = new PrintWriter(outputFileName, "UTF-8");
 
 			System.out.println("FAIL");
 			writer.println("FAIL");
@@ -719,7 +673,7 @@ public class homework {
 	 * Prints a 2D matrix to console.
 	 * @param m
 	 */
-	public static void printMatrix(int[][] m)
+	public static void printMatrix(byte[][] m)
 	{
 		for(int i = 0; i < m.length; i++)
 		{
@@ -734,7 +688,7 @@ public class homework {
 	 * @param m
 	 * @return
 	 */
-	public static String matrixAsString(int[][] m)
+	public static String matrixAsString(byte[][] m)
 	{
 		StringBuffer sb = new StringBuffer();
 
@@ -761,7 +715,11 @@ public class homework {
 		
 		return false;
 	}
-
+	
+	/**
+	 * If you want to use a custom input as argument, pass that file to the main method.
+	 * @param args
+	 */
 	public static void main(String[] args) 
 	{
 		Scanner sc;
@@ -771,12 +729,23 @@ public class homework {
 		// Read contents of input file
 		try
 		{
-			sc = new Scanner(new File(FILE_INPUT));
+			// if input file specified
+			if(args.length > 0) {
+				inputFileName = args[0];
+				
+				if(inputFileName.toLowerCase().contains("input"))
+				{
+					// Use the same pattern for output file now
+					outputFileName = inputFileName.toLowerCase().replace("input", "output");
+				}
+			}
+			
+			sc = new Scanner(new File(inputFileName));
 
 			algo = sc.nextLine().trim().toUpperCase();
 
 			n = Integer.parseInt(sc.nextLine());
-			nursery = new int[n][n];
+			nursery = new byte[n][n];
 
 			p = Integer.parseInt(sc.nextLine());
 
@@ -788,7 +757,7 @@ public class homework {
 				String row = sc.nextLine();
 				for(int j = 0; j < n; j++)
 				{
-					nursery[i][j] = Integer.parseInt(String.valueOf(row.charAt(j)));
+					nursery[i][j] = Byte.parseByte(String.valueOf(row.charAt(j)));
 
 					if(nursery[i][j] == 2)
 						treePoints.add(new NurseryGridPoint(i, j));
@@ -803,11 +772,11 @@ public class homework {
 			// Run the algorithm
 			if(algo.equals("BFS"))
 			{
-				solveBFS();
+				solveBFSorDFS(true);
 			}
 			else if(algo.equals("DFS"))
 			{
-				solveDFS();
+				solveBFSorDFS(false);
 			}
 			else if(algo.equals("SA"))
 			{
@@ -837,7 +806,7 @@ public class homework {
 class NurseryGridPoint
 {
 	/** The location of this point on the grid. */
-	public int x = -1, y = -1;
+	public int x, y;
 
 	public NurseryGridPoint(int x, int y)
 	{
@@ -899,18 +868,18 @@ class NurseryNode
 {	
 	public List<NurseryGridPoint> availablePoints;
 
-	public List<NurseryGridPoint> lizardPoints; // lmao it's public :(
+	public List<NurseryGridPoint> lizardPoints;
 
 	/**
 	 * Depth of the search tree. Also indicates the number of lizards, and can
 	 * be used as a goal test.
 	 */
-	public int depth = 0;
+	// public int depth = 0;
 
 	/**
 	 * Create a blank NurseryState.
 	 */
-	public NurseryNode()
+	private NurseryNode()
 	{
 		// Initialize blank availablePoints
 		availablePoints = new ArrayList<>();
@@ -925,7 +894,7 @@ class NurseryNode
 	 * @param nurseryParam 0 indicates free position, 1 lizard and 2 tree.
 	 * Ideally, input should not have anything but 0's and 2's.
 	 */
-	public NurseryNode(int[][] nurseryParam) {
+	public NurseryNode(byte[][] nurseryParam) {
 		this(); // call default constructor
 
 		// this.nursery = nursery;
@@ -951,7 +920,7 @@ class NurseryNode
 	 */
 	public NurseryNode(NurseryNode node)
 	{
-		this.depth = node.depth;
+		// this.depth = node.depth;
 		this.availablePoints = new LinkedList<>(node.availablePoints);
 		this.lizardPoints = new LinkedList<>(node.lizardPoints);
 	}
@@ -962,10 +931,10 @@ class NurseryNode
 
 		// With spaces
 		StringBuffer sb = new StringBuffer();
-		for(int i = 0; i < depth; i++)
+		for(int i = 0; i < lizardPoints.size(); i++)
 			sb.append(" ");
 		sb.append(String.format("%d/%d: %d left, %d available",
-				depth, homework.p, (homework.p-lizardPoints.size()), availablePoints.size()));
+				lizardPoints.size(), homework.p, (homework.p-lizardPoints.size()), availablePoints.size()));
 
 		return sb.toString();
 
