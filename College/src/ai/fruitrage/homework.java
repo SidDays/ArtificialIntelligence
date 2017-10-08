@@ -60,19 +60,22 @@ public class homework {
 	}
 
 	/**
-	 * TODO Computes the utility value for any node.
+	 * Computes the utility value for any node.
 	 * @return
 	 */
 	private static int minimaxValue(FruitRageNode node, int alpha, int beta)
 	{
 		if(homework.DEBUG_MODE)
-			System.out.format("Computing minimax value for %snode\ns%s\n",
+			System.out.format("Computing minimax value for %snode\n%s\n",
 					(node.isMaxNode())?"max":"min", node);
 		
 		int v;
 
 		if(node.isTerminalNode())
 		{
+			if(homework.DEBUG_MODE)
+				System.out.println("Minimax value (terminal node) computed to be "+node.utilityPassedDown);
+			
 			return node.utilityPassedDown;
 		}
 		else {
@@ -91,6 +94,9 @@ public class homework {
 					v = Math.max(v, result);
 					if(v >= beta)
 					{
+						if(homework.DEBUG_MODE)
+							System.out.println("Max value (pruned) computed to be "+v);
+						
 						return v;
 					}
 					alpha = Math.max(v, alpha);
@@ -107,6 +113,9 @@ public class homework {
 					v = Math.min(v, result);
 					if(v <= alpha)
 					{
+						if(homework.DEBUG_MODE)
+							System.out.println("Min value (pruned) computed to be "+v);
+						
 						return v;
 					}
 					beta = Math.min(v, beta);
@@ -176,7 +185,7 @@ public class homework {
 			
 			String moveToPlay = null;
 			
-			// TODO Check if no children exist!
+			// Check if no children exist!
 			if(children.isEmpty())
 				moveToPlay = "";
 			else {
@@ -216,7 +225,7 @@ class FruitRageNode {
 	/** Width and height of the square board (0 < n <= 26) */
 	public static int n;
 
-	/** Number of fruit types (0 < p <= 9) */
+	/** Number of fruit types (0 < p <= 9) TODO Not used? */
 	public static int p;
 
 	/** The value used for empty spaces on the grid */
@@ -279,7 +288,7 @@ class FruitRageNode {
 	 * Returns a List containing all the point objects corresponding to its grid
 	 * @return
 	 */
-	public List<FruitGridPoint> gridPoints()
+	/*private List<FruitGridPoint> gridPoints()
 	{
 		List<FruitGridPoint> points = new ArrayList<>();
 
@@ -292,7 +301,7 @@ class FruitRageNode {
 
 
 		return points;
-	}
+	}*/
 
 	/**
 	 * Alters the current grid in such a way that 
@@ -381,48 +390,38 @@ class FruitRageNode {
 
 		List<FruitRageNode> children = new ArrayList<>();
 
-		// Check all possible moves
-		// Possible optimization: store fully empty rows inside node (limit i < some number)
-		// Remember, i starts from the rows at the BOTTOM.
-		List<FruitGridPoint> allPoints = this.gridPoints();
-
-		/** Stores all the non-duplicated points that form a single group */
+		/**
+		 * Stores all the non-duplicated points that form a single group.
+		 * Initially empty.
+		 */
 		List<List<FruitGridPoint>> groupPoints = new ArrayList<>();
 
-		for(int i = 0; i < allPoints.size(); i++)
+		// Check all possible moves
+		boolean[][] visited = new boolean[n][n];
+		for(int i = 0; i < n; i++)
 		{
-			FruitGridPoint currentPoint = allPoints.get(i);
-			
-			if(homework.DEBUG_MODE)
-				System.out.format("currentPoint %s\n", currentPoint);
-			
-			/** The 'group', containing this point and all its adjacents */
-			List<FruitGridPoint> currentGroupPoints = new ArrayList<>();
-
-			currentGroupPoints.add(currentPoint);
-			
-			// TODO this logic only adds adjacent points, not indirectly connected ones. Fix it!
-			
-			
-			///////////////////////
-			
-			
-			
-			fourWayFill(currentGroupPoints, currentPoint, allPoints);
-			
-			
-			
-			//////////////////////////
-			 
-			
-			
-			if(homework.DEBUG_MODE)
-				System.out.format("otherPoints in this currentGroup: %d\n", currentGroupPoints.size());
-
-			// Only make this group valid if its root was a non-empty point
-			if(currentPoint.value != FruitRageNode.EMPTY) 
+			for(int j = 0; j < n; j++)
 			{
-				groupPoints.add(currentGroupPoints);
+				visited[i][j] = false;
+			}
+		}
+		
+		for(int i = 0; i < n; i++)
+		{
+			for(int j = 0; j < n; j++)
+			{
+				if(!visited[i][j]) {
+					int value = grid[i][j];
+					List<FruitGridPoint> currentGroup = new ArrayList<>();
+
+					markGroups(currentGroup, visited, i, j, value);
+					
+					if(value != EMPTY)
+						groupPoints.add(currentGroup);
+					
+					if(homework.DEBUG_MODE)
+						System.out.format("%d square(s) in this group of %d's.\n", currentGroup.size(), value);
+				}
 			}
 		}
 
@@ -466,7 +465,7 @@ class FruitRageNode {
 			child.gravitate();
 			
 			if(homework.DEBUG_MODE)
-				System.out.println("Adding child "+child);
+				System.out.println("Adding child...\n"+child);
 			
 			// add it to children! whoopee!
 			children.add(child);
@@ -475,46 +474,27 @@ class FruitRageNode {
 		return children;
 	}
 
-	/**
-	 * TODO
-	 */
-	private static void fourWayFill(List<FruitGridPoint> currentGroupPoints, 
-			FruitGridPoint currentSeedPoint, 
-			List<FruitGridPoint> allPoints) {
+	private void markGroups(List<FruitGridPoint> currentGroup, boolean[][] visited, int i, int j, int value) {
 		
-		int x = currentSeedPoint.x, y = currentSeedPoint.y;
-		
-		// The four directions
-		FruitGridPoint pointUp = new FruitGridPoint(x+1, y, -2);
-		FruitGridPoint pointLeft = new FruitGridPoint(x, y-1, -2);
-		FruitGridPoint pointRight = new FruitGridPoint(x, y+1, -2);
-		FruitGridPoint pointDown = new FruitGridPoint(x-1, y, -2);
-		FruitGridPoint[] adjacentPoints = {pointUp, pointLeft, pointRight, pointDown};
-		
-		// look for, and remove these points from allPoints, and place them in currentGroupPoints
-		for(FruitGridPoint adjacentPoint : adjacentPoints)
+		if(!visited[i][j] && grid[i][j] == value)
 		{
-			// If the adjacent point is not already in the current group
-			if(!currentGroupPoints.contains(adjacentPoint))
-			{
-				// Check if the adjacent point does not cross the bounds of the grid
-				int adjacentPointIndex = allPoints.indexOf(adjacentPoint);
-				if(adjacentPointIndex != -1 && 
-						allPoints.get(adjacentPointIndex).value == currentSeedPoint.value) // If it is found, and is in the same group
-				{
-					// Move the adjacent point from allPoints into the currentGroup of points.
-					currentGroupPoints.add(allPoints.remove(adjacentPointIndex));
-					
-					// fourWayFill(currentGroupPoints, adjacentPoint, allPoints);
-				}
-			}
+			visited[i][j] = true;
+			currentGroup.add(new FruitGridPoint(i, j, value));
+			
+			if(i < n-1)
+				markGroups(currentGroup, visited, i+1, j, value);
+			if(i > 0)
+				markGroups(currentGroup, visited, i-1, j, value);
+			if(j < n-1)
+				markGroups(currentGroup, visited, i, j+1, value);
+			if(j > 0)
+				markGroups(currentGroup, visited, i, j-1, value);
 		}
-		
 		
 	}
 
 	/** Returns a string representation like the one specified in the examples. */
-	public static String gridString(byte[][] gridToPrint)
+	private static String gridString(byte[][] gridToPrint)
 	{
 		StringBuilder sb = new StringBuilder();
 
@@ -561,7 +541,7 @@ class FruitGridPoint
 
 	/** Check if another point is adjacent to this point
 	 * (but not on the same square) */
-	public boolean isAdjacent(FruitGridPoint p2)
+	/*private boolean isAdjacent(FruitGridPoint p2)
 	{
 		FruitGridPoint p1 = this;
 		if(
@@ -572,9 +552,9 @@ class FruitGridPoint
 			return true;
 		} else
 			return false;
-	}
+	}*/
 	
-	/*public boolean isAdjacent(List<FruitGridPoint> list)
+	/*private boolean isAdjacent(List<FruitGridPoint> list)
 	{
 		for(FruitGridPoint pointInList : list)
 			if(this.isAdjacent(pointInList))
@@ -582,9 +562,11 @@ class FruitGridPoint
 		
 		return false;
 	}*/
-	
 
-	
+	/**
+	 * Check if another FruitGridPoint has the same
+	 * x, y coordinates and value.
+	 */
 	@Override
 	public boolean equals(Object o) 
 	{
@@ -604,7 +586,7 @@ class FruitGridPoint
 		FruitGridPoint c = (FruitGridPoint) o;
 
 		// Compare the data members and return accordingly 
-		return (this.x == c.x && this.y == c.y);
+		return (this.x == c.x && this.y == c.y && this.value == c.value);
 	}
 
 	@Override
@@ -616,12 +598,7 @@ class FruitGridPoint
 	@Override
 	public String toString()
 	{
-		return String.format("(%d, %d)", x, y);
-	}
-	
-	public static String toString(int a, int b)
-	{
-		return String.format("(%d, %d)", a, b);
+		return String.format("%d(%d, %d)",value, x, y);
 	}
 	
 	/**
