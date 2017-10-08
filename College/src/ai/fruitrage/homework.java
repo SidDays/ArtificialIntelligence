@@ -74,7 +74,8 @@ public class homework {
 		if(node.isTerminalNode())
 		{
 			if(homework.DEBUG_MODE)
-				System.out.println("Minimax value (terminal node) computed to be "+node.utilityPassedDown);
+				System.out.format("%s value (terminal node) computed to be %d\n",
+						(node.isMaxNode())?"Max":"Min", node.utilityPassedDown);
 			
 			return node.utilityPassedDown;
 		}
@@ -203,6 +204,9 @@ public class homework {
 					}
 				}
 				moveToPlay = bestChild.moveFromParent;
+				
+				if(homework.DEBUG_MODE)
+					System.out.println("Max value (root) computed to be "+bestChildUtility);
 			}
 			
 			finish(moveToPlay);
@@ -281,6 +285,7 @@ class FruitRageNode {
 		this.grid = gridParam;
 		this.depth = depth;
 		this.utilityPassedDown += utilityGain;
+		// System.out.println("Utility increased by "+utilityGain + " -> " + utilityPassedDown);
 		this.moveFromParent = move;
 	}
 
@@ -356,7 +361,7 @@ class FruitRageNode {
 		StringBuilder sb = new StringBuilder();
 
 		// sb.append("The grid looks like: \n");
-		sb.append(gridString(grid));
+		sb.append(gridPrettyString(grid));
 
 		return sb.toString();
 	}
@@ -446,10 +451,10 @@ class FruitRageNode {
 				childGrid[point.x][point.y] = FruitRageNode.EMPTY;
 			
 			// PASS THE UTILITY! The utility should be increased by n^2.
-			int utilityIncrease = groupPoints.size() * groupPoints.size();
+			int utilityIncrease = action.size() * action.size();
 			
 			// if current node is max player, next is min, so make this negative
-			if(this.isMaxNode())
+			if(!this.isMaxNode())
 				utilityIncrease = -utilityIncrease;
 			
 			// Record which move was played
@@ -494,7 +499,7 @@ class FruitRageNode {
 	}
 
 	/** Returns a string representation like the one specified in the examples. */
-	private static String gridString(byte[][] gridToPrint)
+	private static String gridPrettyString(byte[][] gridToPrint)
 	{
 		StringBuilder sb = new StringBuilder();
 
