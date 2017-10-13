@@ -16,17 +16,46 @@ import java.util.concurrent.TimeUnit;
  */
 public class homework {
 
-	private static String inputFileName = "input.txt";
-	private static String outputFileName = "output.txt";
-
-	private static long timeStart, timeCurrent;
-	private static long secondsRemaining;
-
 	/** If true, prints node information to the console. */
 	public static final boolean DEBUG_MODE = true;
 	
+	private static String inputFileName = "input.txt";
+	private static String outputFileName = "output.txt";
+
+	/** System.nanoTime() values. */
+	private static long timeStart, timeCurrent;
+	
+	/** Read from input, time allocated. */
+	private static long nanosecondsRemaining;
+
+	/**
+	 * Leave this much time before forcing termination (s -> ms -> ns).<br>
+	 * <br>
+	 * TODO Calibrate might help in calculating this.
+	 */
+	private static long nanosecondsBuffer = (long)(10*(1000)*(1000000));
+	
 	/** The initial values for alpha and beta */
 	public static final int INF = Integer.MAX_VALUE;
+	
+	/**
+	 * Checks if the program is running out of time.
+	 */
+	private static boolean outtaTime()
+	{
+		timeCurrent = System.nanoTime();
+		
+		nanosecondsRemaining = timeCurrent - timeStart;
+		
+		if(nanosecondsRemaining < nanosecondsBuffer)
+		{
+			System.out.println("Time limit exceeded! Forcing ending.");
+			return true;
+			
+		}
+		else 
+			return false;
+	}
 
 	/**
 	 * Reads the input from the text files in the format specified, and returns
@@ -36,8 +65,13 @@ public class homework {
 	{
 		// Start reading input
 		FruitRageNode.n = Integer.parseInt(sc.nextLine());
+		System.out.println("Grid size (n) is "+ FruitRageNode.n +".");
+		
 		FruitRageNode.p = Integer.parseInt(sc.nextLine());	
-		secondsRemaining = (long)(Float.parseFloat(sc.nextLine())*1000);
+		System.out.println("Fruit types (p) are "+FruitRageNode.p+".");
+		
+		nanosecondsRemaining = (long)((Float.parseFloat(sc.nextLine())*1000)*1000000);
+		System.out.println("Time remaining is "+nanosecondsRemaining + " ns.");
 
 		// Read the grid
 		byte[][] gridInitial = new byte[FruitRageNode.n][FruitRageNode.n];
@@ -134,20 +168,35 @@ public class homework {
 	 * TODO print the grid in non-pretty format.
 	 * @param moveToPrint
 	 */
-	private static void finish(FruitRageNode bestChild)
+	private static void finishSolved(FruitRageNode bestChild)
 	{
 		// Print solution to console as well as file
 		PrintWriter writer = null;
-		try{
-
-			writer = new PrintWriter(outputFileName, "UTF-8");
-			System.out.println(bestChild.moveFromParent);
-			writer.println(bestChild.moveFromParent);
+		try {
 			
-			System.out.println(bestChild.gridString());
-			writer.println(bestChild.gridString());
+			writer = new PrintWriter(outputFileName, "UTF-8");
+			
+			System.out.println("Solution printed to file:");
+			
+			// If no children - print blank lines (?)
+			if(bestChild == null)
+			{
+				System.out.println();
+				writer.println();
 
+				System.out.println();
+				writer.println();
+			}
 
+			else {
+
+				System.out.println(bestChild.moveFromParent);
+				writer.println(bestChild.moveFromParent);
+
+				System.out.println(bestChild.gridString());
+				writer.println(bestChild.gridString());
+			}
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -182,20 +231,20 @@ public class homework {
 
 			// Create starting node
 			FruitRageNode initNode = new FruitRageNode(gridInitial);
-			
-			if(homework.DEBUG_MODE)
-				System.out.println("Starting configuration: \n"+initNode);
+
+			System.out.println("\nStarting configuration: \n"+initNode+"\n");
 
 			initNode.gravitate();
 			
 			List<FruitRageNode> children = initNode.generateChildren();
 			FruitRageNode bestChild = null;
 			
-			String moveToPlay = null;
 			
 			// Check if no children exist!
-			if(children.isEmpty())
-				moveToPlay = "";
+			if(children.isEmpty()) {
+				// moveToPlay = "";
+				// Handle this in finish(FruitRageNode)
+			}
 			else {
 
 				// Find the move to perform			
@@ -215,7 +264,7 @@ public class homework {
 					System.out.println("Max value (root) computed to be "+bestChildUtility);
 			}
 			
-			finish(bestChild);
+			finishSolved(bestChild);
 
 			sc.close();
 
@@ -367,7 +416,7 @@ class FruitRageNode {
 		StringBuilder sb = new StringBuilder();
 
 		// sb.append("The grid looks like: \n");
-		sb.append(this.gridStringPretty());
+		sb.append(this.gridString());
 
 		return sb.toString();
 	}
@@ -485,7 +534,14 @@ class FruitRageNode {
 		return children;
 	}
 	
-	
+	/**
+	 * TODO Describe this function
+	 * @param currentGroup
+	 * @param visited
+	 * @param i
+	 * @param j
+	 * @param value
+	 */
 	private void markGroups(List<FruitGridPoint> currentGroup, boolean[][] visited, int i, int j, int value) {
 		
 		if(!visited[i][j] && grid[i][j] == value)
