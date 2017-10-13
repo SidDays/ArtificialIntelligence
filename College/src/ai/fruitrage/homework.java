@@ -21,6 +21,7 @@ public class homework {
 
 	private static long timeStart, timeCurrent;
 	private static long secondsRemaining;
+	
 
 	/** If true, prints node information to the console. */
 	public static final boolean DEBUG_MODE = true;
