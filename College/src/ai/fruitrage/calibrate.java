@@ -18,6 +18,8 @@ package ai.fruitrage;
  * When your agent runs during grading, it could then read calibration.txt in
  * addition to reading input.txt, and use the data from calibration.txt to
  * strategize about search depth or other factors.
+ * 
+ * @author Siddhesh Karekar
  */
 public class calibrate {
 	

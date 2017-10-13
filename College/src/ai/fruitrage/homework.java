@@ -1,6 +1,3 @@
-/**
- * 
- */
 package ai.fruitrage;
 
 import java.io.File;
@@ -13,7 +10,9 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 /**
- *	Implements minimax algorithm and alpha-beta pruning.
+ * Implements minimax algorithm and alpha-beta pruning.
+ * 
+ * @author Siddhesh Karekar
  */
 public class homework {
 
@@ -485,7 +484,8 @@ class FruitRageNode {
 
 		return children;
 	}
-
+	
+	
 	private void markGroups(List<FruitGridPoint> currentGroup, boolean[][] visited, int i, int j, int value) {
 		
 		if(!visited[i][j] && grid[i][j] == value)
