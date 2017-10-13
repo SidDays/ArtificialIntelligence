@@ -131,15 +131,22 @@ public class homework {
 		return v;
 	}
 	
-	private static void finish(String moveToPrint)
+	/**
+	 * TODO print the grid in non-pretty format.
+	 * @param moveToPrint
+	 */
+	private static void finish(FruitRageNode bestChild)
 	{
 		// Print solution to console as well as file
 		PrintWriter writer = null;
 		try{
 
 			writer = new PrintWriter(outputFileName, "UTF-8");
-			System.out.println(moveToPrint);
-			writer.println(moveToPrint);
+			System.out.println(bestChild.moveFromParent);
+			writer.println(bestChild.moveFromParent);
+			
+			System.out.println(bestChild.gridString());
+			writer.println(bestChild.gridString());
 
 
 		} catch (IOException e) {
@@ -183,6 +190,7 @@ public class homework {
 			initNode.gravitate();
 			
 			List<FruitRageNode> children = initNode.generateChildren();
+			FruitRageNode bestChild = null;
 			
 			String moveToPlay = null;
 			
@@ -192,7 +200,7 @@ public class homework {
 			else {
 
 				// Find the move to perform			
-				FruitRageNode bestChild = children.remove(0);
+				bestChild = children.remove(0);
 				int bestChildUtility = minimaxValue(bestChild, -INF, +INF);
 				for(FruitRageNode otherChild : children)
 				{
@@ -203,13 +211,12 @@ public class homework {
 						bestChildUtility = otherChildUtility;
 					}
 				}
-				moveToPlay = bestChild.moveFromParent;
 				
 				if(homework.DEBUG_MODE)
 					System.out.println("Max value (root) computed to be "+bestChildUtility);
 			}
 			
-			finish(moveToPlay);
+			finish(bestChild);
 
 			sc.close();
 
@@ -361,7 +368,7 @@ class FruitRageNode {
 		StringBuilder sb = new StringBuilder();
 
 		// sb.append("The grid looks like: \n");
-		sb.append(gridPrettyString(grid));
+		sb.append(this.gridStringPretty());
 
 		return sb.toString();
 	}
@@ -497,9 +504,31 @@ class FruitRageNode {
 		}
 		
 	}
+	
+	/** Returns a string representation required in the output. */
+	public String gridString()
+	{
+		StringBuilder sb = new StringBuilder();
+
+		for(int i = n-1; i >= 0; i--)
+		{
+			for(int j = 0; j < n; j++)
+			{
+				if(this.grid[i][j] == EMPTY)
+					sb.append(EMPTY_CHAR);
+				else
+					sb.append(this.grid[i][j]);
+			}
+			
+			if(i > 0)
+				sb.append(System.lineSeparator());
+		}
+
+		return sb.toString();
+	}
 
 	/** Returns a string representation like the one specified in the examples. */
-	private static String gridPrettyString(byte[][] gridToPrint)
+	public String gridStringPretty()
 	{
 		StringBuilder sb = new StringBuilder();
 
@@ -514,10 +543,10 @@ class FruitRageNode {
 			{
 				if(j == 0)
 					sb.append("|");
-				if(gridToPrint[i][j] == EMPTY)
+				if(this.grid[i][j] == EMPTY)
 					sb.append(EMPTY_CHAR);
 				else
-					sb.append(gridToPrint[i][j]);
+					sb.append(this.grid[i][j]);
 				sb.append("|");
 			}
 
