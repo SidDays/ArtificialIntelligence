@@ -20,6 +20,9 @@ public class homework {
 	/** If true, prints node information to the console. */
 	public static final boolean DEBUG_MODE = true;
 	
+	/** If the search space is sufficiently small, you might not require a cutoff. */
+	public static int defaultCutoff = 3; //Integer.MAX_VALUE;
+	
 	public static String inputFileName = "input.txt";
 	public static String outputFileName = "output.txt";
 	
@@ -50,9 +53,6 @@ public class homework {
 	
 	/** The initial values for alpha and beta */
 	public static final int INF = Integer.MAX_VALUE;
-	
-	/** If the search space is sufficiently small, you might not require a cutoff. */
-	public static int defaultCutoff = Integer.MAX_VALUE;
 
 	
 	/**
@@ -97,14 +97,16 @@ public class homework {
 	 */
 	private static int minimaxValue(FruitRageNode node, int alpha, int beta, int cutoff)
 	{
-		if(homework.DEBUG_MODE)
-			System.out.format("Computing minimax value for %snode\n%s\n",
-					(node.isMaxNode())?"max":"min", node);
+		/*if(homework.DEBUG_MODE) {
+			System.out.format("Computing minimax value for %snode\n",
+					(node.isMaxNode())?"max":"min");
+			// System.out.println(node);
+		}*/
 		
 		int v;
 
 		// TODO additional evaluation logic?
-		if(node.isTerminalNode() || node.depth >= cutoff)
+		if(node.isTerminalNode())
 		{
 			if(homework.DEBUG_MODE)
 				System.out.format("%s value (terminal node) computed to be %d\n",
@@ -112,50 +114,81 @@ public class homework {
 			
 			return node.utilityPassedDown;
 		}
-		else {
+		else
+		{
 			// Not a terminal node
 
 			// Compute children
 			List<FruitRageNode> children = node.generateChildren();
 			
-			// Sort children greedily (in reverse order of score) to maximize cutoff
+			// TODO Sort children greedily (in reverse order of score) to maximize cutoff
 			Collections.sort(children);
-
-			if(node.isMaxNode()) // Max node
+			
+			if(node.depth >= cutoff) // Evaluation procedure
 			{
-				v = -INF;
+				if(homework.DEBUG_MODE)
+					System.out.println("Triggered cutoff.");
 				
-				for(FruitRageNode child : children)
+				int estimatedUtilityGain = 0;
+				
+				for(int i = 0; i < children.size(); i++)
 				{
-					int result = minimaxValue(child, alpha, beta, cutoff);
-					v = Math.max(v, result);
-					if(v >= beta)
+					if((i+node.depth) % 2 == 0)
 					{
-						if(homework.DEBUG_MODE)
-							System.out.println("Max value (pruned) computed to be "+v);
-						
-						return v;
+						estimatedUtilityGain += children.get(i).moveFromParentScore;
 					}
-					alpha = Math.max(v, alpha);
+					else {
+						estimatedUtilityGain -= children.get(i).moveFromParentScore;
+					}
 				}
 				
-			}
-			else // Min node
-			{
-				v = +INF;
+				node.utilityPassedDown += estimatedUtilityGain;
 				
-				for(FruitRageNode child : children)
+				if(homework.DEBUG_MODE)
+					System.out.format("%s value (cutoff node) computed to be %d\n",
+							(node.isMaxNode())?"Max":"Min", node.utilityPassedDown);
+				
+				return node.utilityPassedDown;
+			}
+			else
+			{
+
+				if(node.isMaxNode()) // Max node
 				{
-					int result = minimaxValue(child, alpha, beta, cutoff);
-					v = Math.min(v, result);
-					if(v <= alpha)
+					v = -INF;
+
+					for(FruitRageNode child : children)
 					{
-						if(homework.DEBUG_MODE)
-							System.out.println("Min value (pruned) computed to be "+v);
-						
-						return v;
+						int result = minimaxValue(child, alpha, beta, cutoff);
+						v = Math.max(v, result);
+						if(v >= beta)
+						{
+							if(homework.DEBUG_MODE)
+								System.out.println("Max value (pruned) computed to be "+v);
+
+							return v;
+						}
+						alpha = Math.max(v, alpha);
 					}
-					beta = Math.min(v, beta);
+
+				}
+				else // Min node
+				{
+					v = +INF;
+
+					for(FruitRageNode child : children)
+					{
+						int result = minimaxValue(child, alpha, beta, cutoff);
+						v = Math.min(v, result);
+						if(v <= alpha)
+						{
+							if(homework.DEBUG_MODE)
+								System.out.println("Min value (pruned) computed to be "+v);
+
+							return v;
+						}
+						beta = Math.min(v, beta);
+					}
 				}
 			}
 
@@ -424,8 +457,8 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 	 */
 	public void gravitate()
 	{
-		if(homework.DEBUG_MODE)
-			System.out.println("Applying gravity...");
+		/*if(homework.DEBUG_MODE)
+			System.out.println("Applying gravity...");*/
 
 		// Go column-wise
 		for(int j = 0; j < n; j++)
@@ -546,8 +579,8 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 					if(value != EMPTY)
 						groupPoints.add(currentGroup);
 					
-					if(homework.DEBUG_MODE)
-						System.out.format("%d square(s) in this group of %d's.\n", currentGroup.size(), value);
+					/*if(homework.DEBUG_MODE)
+						System.out.format("%d square(s) in this group of %d's.\n", currentGroup.size(), value);*/
 				}
 			}
 		}
@@ -582,7 +615,7 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 				utilityIncrease = -utilityIncrease;
 			
 			// Record which move was played
-			String movePlayed = FruitGridPoint.pointToMove(action.get(0).x, action.get(0).y);
+			String movePlayed = FruitGridPoint.pointToMoveString(action.get(0).x, action.get(0).y);
 			
 			// Create a new node with this configuration
 			FruitRageNode child = new FruitRageNode(childGrid, 
@@ -594,8 +627,10 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 			// Apply gravity
 			child.gravitate();
 			
-			if(homework.DEBUG_MODE)
-				System.out.println("Adding child...\n"+child);
+			/*if(homework.DEBUG_MODE) {
+				System.out.println("Adding child...");
+				// System.out.println(child);
+			}*/
 			
 			// add it to children! whoopee!
 			children.add(child);
@@ -698,31 +733,7 @@ class FruitGridPoint
 		this.y = y;
 		this.value = val;
 	}
-
-	/** Check if another point is adjacent to this point
-	 * (but not on the same square) */
-	/*private boolean isAdjacent(FruitGridPoint p2)
-	{
-		FruitGridPoint p1 = this;
-		if(
-				(p1.x == p2.x+1 && p1.y == p2.y) ||
-				(p1.x == p2.x-1 && p1.y == p2.y) ||
-				(p1.x == p2.x && p1.y == p2.y+1) ||
-				(p1.x == p2.x && p1.y == p2.y-1)) {
-			return true;
-		} else
-			return false;
-	}*/
 	
-	/*private boolean isAdjacent(List<FruitGridPoint> list)
-	{
-		for(FruitGridPoint pointInList : list)
-			if(this.isAdjacent(pointInList))
-				return true;
-		
-		return false;
-	}*/
-
 	/**
 	 * Check if another FruitGridPoint has the same
 	 * x, y coordinates and value.
@@ -767,7 +778,7 @@ class FruitGridPoint
 	 * next one to the right, etc), and A number from 1 to 26 representing the
 	 * row number (where 1 is the top row, 2 is the row below it, etc).
 	 */
-	public static String pointToMove(int x, int y)
+	public static String pointToMoveString(int x, int y)
 	{
 		StringBuilder sb = new StringBuilder();
 		

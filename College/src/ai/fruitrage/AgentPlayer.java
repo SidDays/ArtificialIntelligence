@@ -11,7 +11,7 @@ import java.util.Scanner;
  */
 public class AgentPlayer {
 	
-	private static final boolean REQUIRE_KEY_PRESS = true;
+	private static final boolean REQUIRE_KEY_PRESS = false;
 
 	private static int turn = 0;
 	
@@ -32,8 +32,6 @@ public class AgentPlayer {
 		PrintWriter writerInput = null;
 		try {
 
-			
-			
 			// Read the score of the TODO
 			Scanner inResult = new Scanner(new File(homework.resultFileName));
 			
@@ -106,6 +104,26 @@ public class AgentPlayer {
 		return true;
 	}
 	
+	/**
+	 * Your selected move, represented as two characters: A letter from A to Z
+	 * representing the column number (where A is the leftmost column, B is the
+	 * next one to the right, etc), and A number from 1 to 26 representing the
+	 * row number (where 1 is the top row, 2 is the row below it, etc).
+	 */
+	public static FruitGridPoint moveStringToPoint(String move)
+	{
+		char column = move.charAt(0);
+		int y = column - 'A';
+		
+		String row = ""+move.charAt(1);
+		int x = FruitRageNode.n - Integer.parseInt(row);	
+		 
+		// By default, let it be empty
+		int val = -1;
+		
+		return new FruitGridPoint(x, y, val);
+	}
+	
 	public static void main(String args[])
 	{
 
@@ -126,8 +144,13 @@ public class AgentPlayer {
 				in.nextLine();
 				System.out.println();
 			}
-
-			homework.main(new String[] {});
+			
+			if(turn == 0) {
+				homework.main(new String[] {});
+			}
+			else {
+				homework.main(new String[] {});
+			}
 
 			// Switch turn
 			turn = (turn + 1)%2;
