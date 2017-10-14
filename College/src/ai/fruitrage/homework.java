@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -19,15 +20,27 @@ public class homework {
 	/** If true, prints node information to the console. */
 	public static final boolean DEBUG_MODE = true;
 	
-	private static String inputFileName = "input.txt";
-	private static String outputFileName = "output.txt";
+	public static String inputFileName = "input.txt";
+	public static String outputFileName = "output.txt";
+	
+	/**
+	 * The result file format is:<br>
+	 * <code>moveFromParentScore,n,p,secondsRemaining</code>
+	 */
+	public static String resultFileName = "result.txt";
 
 	/** System.nanoTime() values. */
 	private static long timeStart, timeCurrent;
 	
 	/** Read from input, time allocated. */
-	private static long nanosecondsRemaining;
-
+	public static float secondsAllotted;
+	
+	/** Convert above floating value into precise-r nanoseconds */
+	private static long nanosecondsAllotted;
+	
+	/** This value gets updated every time you check how much time has elapsed. */
+	private static long nanosecondsElapsedSinceStart;
+	
 	/**
 	 * Leave this much time before forcing termination (s -> ms -> ns).<br>
 	 * <br>
@@ -38,25 +51,10 @@ public class homework {
 	/** The initial values for alpha and beta */
 	public static final int INF = Integer.MAX_VALUE;
 	
-	/**
-	 * Checks if the program is running out of time.
-	 */
-	private static boolean outtaTime()
-	{
-		timeCurrent = System.nanoTime();
-		
-		nanosecondsRemaining = timeCurrent - timeStart;
-		
-		if(nanosecondsRemaining < nanosecondsBuffer)
-		{
-			System.out.println("Time limit exceeded! Forcing ending.");
-			return true;
-			
-		}
-		else 
-			return false;
-	}
+	/** If the search space is sufficiently small, you might not require a cutoff. */
+	public static int defaultCutoff = Integer.MAX_VALUE;
 
+	
 	/**
 	 * Reads the input from the text files in the format specified, and returns
 	 * a byte array corresponding to the initial grid.
@@ -70,8 +68,9 @@ public class homework {
 		FruitRageNode.p = Integer.parseInt(sc.nextLine());	
 		System.out.println("Fruit types (p) are "+FruitRageNode.p+".");
 		
-		nanosecondsRemaining = (long)((Float.parseFloat(sc.nextLine())*1000)*1000000);
-		System.out.println("Time remaining is "+nanosecondsRemaining + " ns.");
+		secondsAllotted = Float.parseFloat(sc.nextLine());
+		nanosecondsAllotted = (long)(secondsAllotted * 1000 * 1000000);
+		System.out.println("Time remaining is "+nanosecondsAllotted + " ns.");
 
 		// Read the grid
 		byte[][] gridInitial = new byte[FruitRageNode.n][FruitRageNode.n];
@@ -96,7 +95,7 @@ public class homework {
 	 * Computes the utility value for any node.
 	 * @return
 	 */
-	private static int minimaxValue(FruitRageNode node, int alpha, int beta)
+	private static int minimaxValue(FruitRageNode node, int alpha, int beta, int cutoff)
 	{
 		if(homework.DEBUG_MODE)
 			System.out.format("Computing minimax value for %snode\n%s\n",
@@ -104,7 +103,8 @@ public class homework {
 		
 		int v;
 
-		if(node.isTerminalNode())
+		// TODO additional evaluation logic?
+		if(node.isTerminalNode() || node.depth >= cutoff)
 		{
 			if(homework.DEBUG_MODE)
 				System.out.format("%s value (terminal node) computed to be %d\n",
@@ -117,6 +117,9 @@ public class homework {
 
 			// Compute children
 			List<FruitRageNode> children = node.generateChildren();
+			
+			// Sort children greedily (in reverse order of score) to maximize cutoff
+			Collections.sort(children);
 
 			if(node.isMaxNode()) // Max node
 			{
@@ -124,7 +127,7 @@ public class homework {
 				
 				for(FruitRageNode child : children)
 				{
-					int result = minimaxValue(child, alpha, beta);
+					int result = minimaxValue(child, alpha, beta, cutoff);
 					v = Math.max(v, result);
 					if(v >= beta)
 					{
@@ -143,7 +146,7 @@ public class homework {
 				
 				for(FruitRageNode child : children)
 				{
-					int result = minimaxValue(child, alpha, beta);
+					int result = minimaxValue(child, alpha, beta, cutoff);
 					v = Math.min(v, result);
 					if(v <= alpha)
 					{
@@ -165,16 +168,20 @@ public class homework {
 	}
 	
 	/**
-	 * TODO print the grid in non-pretty format.
+	 * TODO
 	 * @param moveToPrint
 	 */
 	private static void finishSolved(FruitRageNode bestChild)
 	{
 		// Print solution to console as well as file
-		PrintWriter writer = null;
+		PrintWriter writerOutput = null, writerResult = null;
 		try {
 			
-			writer = new PrintWriter(outputFileName, "UTF-8");
+			// Refresh values of nanoseconds
+			updateElapsedTime();
+			
+			writerOutput = new PrintWriter(outputFileName, "UTF-8");
+			writerResult = new PrintWriter(resultFileName, "UTF-8");
 			
 			System.out.println("Solution printed to file:");
 			
@@ -182,28 +189,73 @@ public class homework {
 			if(bestChild == null)
 			{
 				System.out.println();
-				writer.println();
+				writerOutput.println();
 
 				System.out.println();
-				writer.println();
+				writerOutput.println();
+				
+				writerResult.println();
 			}
 
 			else {
 
 				System.out.println(bestChild.moveFromParent);
-				writer.println(bestChild.moveFromParent);
+				writerOutput.println(bestChild.moveFromParent);
 
 				System.out.println(bestChild.gridString());
-				writer.println(bestChild.gridString());
+				writerOutput.println(bestChild.gridString());
+				
+				// Print game stats to result (as CSV?)
+				double secondsLeft = (TimeUnit.MILLISECONDS.convert(nanosecondsAllotted-nanosecondsElapsedSinceStart, TimeUnit.NANOSECONDS) / 1000.0);
+				System.out.format("Game results written to file:\n"
+						+ "Move score is %d.\n"
+						+ "Grid size (n) is %d.\n"
+						+ "Fruit types (p) are %d.\n"
+						+ "Seconds left are %.3fs.\n",
+						bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft);
+				writerResult.format("%d,%d,%d,%.3f\n", bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft);
 			}
 			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			if(writer != null)
-				writer.close();
+			if(writerOutput != null)
+				writerOutput.close();
+			if(writerResult != null)
+				writerResult.close();
 		}
 	}
+	
+	private static long updateElapsedTime()
+	{
+		timeCurrent = System.nanoTime();
+		
+		nanosecondsElapsedSinceStart = timeCurrent - timeStart;
+
+		System.out.println("Elapsed time: "
+				+ (TimeUnit.MILLISECONDS.convert(nanosecondsElapsedSinceStart, TimeUnit.NANOSECONDS) / 1000.0)
+				+ " seconds.");
+		
+		return nanosecondsElapsedSinceStart;
+	}
+	
+	/**
+	 * Checks if the program is running out of time.
+	 */
+	/*private static boolean outtaTime()
+	{
+		nanosecondsElapsedSinceStart = updateElapsedTime();
+		long nanosecondsRemaining = timeStart - nanosecondsElapsedSinceStart;
+		
+		if(nanosecondsAllotted < nanosecondsBuffer)
+		{
+			System.out.println("Time limit exceeded! Forcing ending.");
+			return true;
+			
+		}
+		else 
+			return false;
+	}*/
 
 	public static void main(String[] args)
 	{
@@ -214,14 +266,15 @@ public class homework {
 		// Read contents of input file
 		try
 		{
-			// if input file specified
+			// if input file specified - this block may be removed
 			if(args.length > 0) {
 				inputFileName = args[0];
 
 				if(inputFileName.toLowerCase().contains("input"))
 				{
-					// Use the same pattern for output file now
+					// Use the same pattern for other files now
 					outputFileName = inputFileName.toLowerCase().replace("input", "output");
+					resultFileName = inputFileName.toLowerCase().replace("input", "result");
 				}
 			}
 
@@ -249,10 +302,10 @@ public class homework {
 
 				// Find the move to perform			
 				bestChild = children.remove(0);
-				int bestChildUtility = minimaxValue(bestChild, -INF, +INF);
+				int bestChildUtility = minimaxValue(bestChild, -INF, +INF, defaultCutoff);
 				for(FruitRageNode otherChild : children)
 				{
-					int otherChildUtility = minimaxValue(otherChild, -INF, +INF);
+					int otherChildUtility = minimaxValue(otherChild, -INF, +INF, defaultCutoff);
 					if(otherChildUtility > bestChildUtility)
 					{
 						bestChild = otherChild;
@@ -269,22 +322,17 @@ public class homework {
 			sc.close();
 
 		} catch (FileNotFoundException e) { }
-
-		timeCurrent = System.nanoTime();
-
-		System.out.println("\nCompleted in " +
-				(TimeUnit.MILLISECONDS.convert(timeCurrent - timeStart, TimeUnit.NANOSECONDS) / 1000.0) + " seconds.");
 	}
 
 }
 
 
-class FruitRageNode {
+class FruitRageNode implements Comparable<FruitRageNode> {
 
 	/** Width and height of the square board (0 < n <= 26) */
 	public static int n;
 
-	/** Number of fruit types (0 < p <= 9) TODO Not used? */
+	/** Number of fruit types (0 < p <= 9) */
 	public static int p;
 
 	/** The value used for empty spaces on the grid */
@@ -309,6 +357,11 @@ class FruitRageNode {
 	 * Records the move that the parent node played to result in this child.
 	 */
 	public String moveFromParent;
+	
+	/**
+	 * Records the score gained by parent while generating this child.
+	 */
+	public int moveFromParentScore;
 
 	/**
 	 * The utility value of the node.<br>
@@ -333,15 +386,17 @@ class FruitRageNode {
 		this.depth = 0;
 		this.utilityPassedDown = 0;
 		this.moveFromParent = "";
+		this.moveFromParentScore = 0;
 	}
 
-	public FruitRageNode(byte[][] gridParam, int depth, int utilityGain, String move)
+	public FruitRageNode(byte[][] gridParam, int depth, int utilityGain, String move, int score)
 	{
 		this.grid = gridParam;
 		this.depth = depth;
 		this.utilityPassedDown += utilityGain;
 		// System.out.println("Utility increased by "+utilityGain + " -> " + utilityPassedDown);
 		this.moveFromParent = move;
+		this.moveFromParentScore = score;
 	}
 
 	/**
@@ -407,6 +462,18 @@ class FruitRageNode {
 	 */
 	public boolean isMaxNode() {
 		return depth %2 == 0;
+	}
+	
+	/**
+	 * Allow the use of Collections.sort to sort node objects.<br>
+	 * <br>
+	 * The sort order is <b>descending</b> order of scores.
+	 */
+	@Override
+	public int compareTo(FruitRageNode otherNode)
+	{
+		// Ulta lol
+		return Integer.compare(otherNode.moveFromParentScore, this.moveFromParentScore);
 	}
 
 	/** String representation that contains the grid. */
@@ -489,8 +556,7 @@ class FruitRageNode {
 		if(homework.DEBUG_MODE)
 			System.out.format("%d possible move(s) from this node.\n", groupPoints.size());
 
-		// TODO possibly order them in some way - heuristics
-
+		// These will be ordered in the minimax call.
 		for(List<FruitGridPoint> action : groupPoints)
 		{
 			// Copy the grid
@@ -504,11 +570,14 @@ class FruitRageNode {
 			// Blank out this group in the grid
 			for(FruitGridPoint point : action)
 				childGrid[point.x][point.y] = FruitRageNode.EMPTY;
-			
-			// PASS THE UTILITY! The utility should be increased by n^2.
+
+			/**
+			 * Record the score of this move by increasing utility - it should
+			 * be increased by n^2.
+			 */
 			int utilityIncrease = action.size() * action.size();
 			
-			// if current node is max player, next is min, so make this negative
+			// if it is a Min-Node, move is opponent's, so make this negative
 			if(!this.isMaxNode())
 				utilityIncrease = -utilityIncrease;
 			
@@ -519,7 +588,8 @@ class FruitRageNode {
 			FruitRageNode child = new FruitRageNode(childGrid, 
 					this.depth+1, 
 					(this.utilityPassedDown + utilityIncrease),
-					movePlayed);
+					movePlayed, 
+					utilityIncrease);
 			
 			// Apply gravity
 			child.gravitate();
@@ -584,7 +654,7 @@ class FruitRageNode {
 	}
 
 	/** Returns a string representation like the one specified in the examples. */
-	public String gridStringPretty()
+	/*public String gridStringPretty()
 	{
 		StringBuilder sb = new StringBuilder();
 
@@ -613,7 +683,7 @@ class FruitRageNode {
 			sb.append("-");
 
 		return sb.toString();
-	}
+	}*/
 }
 
 class FruitGridPoint
