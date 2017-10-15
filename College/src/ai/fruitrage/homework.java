@@ -29,6 +29,7 @@ public class homework {
 	public static String outputFileName = "output.txt";
 	
 	/**
+	 * TODO Make this optional.
 	 * The result file format is:<br>
 	 * <code>moveFromParentScore,n,p,secondsRemaining</code>
 	 */
@@ -98,7 +99,6 @@ public class homework {
 		
 		int v;
 
-		// TODO additional evaluation logic?
 		if(node.isTerminalNode())
 		{
 			if(homework.DEBUG_MODE)
@@ -119,13 +119,14 @@ public class homework {
 			// Compute children
 			List<FruitRageNode> children = node.generateChildren();
 			
-			// TODO Sort children greedily (in reverse order of score) to maximize cutoff
+			// Sort children greedily to maximize cutoff
 			if(node.isMaxNode())
 				Collections.sort(children, Collections.reverseOrder());
 			else
 				Collections.sort(children);
 			
-			if(node.depth >= cutoff) // Evaluation procedure
+			// Evaluation procedure for cutoff
+			if(node.depth >= cutoff)
 			{
 				if(homework.DEBUG_MODE)
 					System.out.println("Triggered cutoff.");
@@ -260,7 +261,7 @@ public class homework {
 				// Print game stats to result (as CSV?)
 				float secondsLeft2 = nanosecondsToSeconds(durNanosecondsAllotted-durNanosecondsElapsedSinceStart);
 				
-				System.out.format("Game results written to file:\n"
+				System.out.format("\nGame results written to file:\n"
 						+ "Move score is %d.\n"
 						+ "Grid size (n) is %d.\n"
 						+ "Fruit types (p) are %d.\n"
@@ -280,6 +281,12 @@ public class homework {
 		}
 	}
 	
+	/**
+	 * Updates timeCurrent and durNanosecondsElapsedSinceStart.<br>
+	 * <br>
+	 * Also prints the elapsed time in seconds.
+	 * @return The updated durNanosecondsElapsedSinceStart
+	 */
 	private static long updateElapsedTime()
 	{
 		timeCurrent = System.nanoTime();
@@ -654,11 +661,6 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 	
 	/**
 	 * TODO Describe this function
-	 * @param currentGroup
-	 * @param visited
-	 * @param i
-	 * @param j
-	 * @param value
 	 */
 	private void markGroups(List<FruitGridPoint> currentGroup, boolean[][] visited, int i, int j, int value) {
 		
