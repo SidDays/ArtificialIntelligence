@@ -4,6 +4,9 @@
 package ai.fruitrage;
 
 /**
+ * You will have five (5) minutes to run calibrate.xxx. These minutes will NOT
+ * come out of your time budget for the rest of the game.
+ * 
  * To help you with figuring out the speed of the computer that your agent runs
  * on, you are allowed to also provide a second program called calibrate.xxx
  * (same extension conventions as for homework.xxx). This is optional.

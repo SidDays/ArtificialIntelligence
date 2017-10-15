@@ -18,11 +18,13 @@ import java.util.concurrent.TimeUnit;
 public class homework {
 
 	/** If true, prints node information to the console. */
-	public static final boolean DEBUG_MODE = false;
+	public static final boolean DEBUG_MODE = true;
+	
+	private static String DEPTH_SEPARATOR = ".";
 	
 	/** If the search space is sufficiently small, you might not require a cutoff. */
-	public static int defaultCutoff = //3
-			Integer.MAX_VALUE;
+	public static int defaultCutoff = //4;
+			 Integer.MAX_VALUE;
 	
 	public static String inputFileName = "input.txt";
 	public static String outputFileName = "output.txt";
@@ -103,8 +105,13 @@ public class homework {
 		if(node.isTerminalNode())
 		{
 			if(homework.DEBUG_MODE)
+			{
+				for(int i = 0; i < node.depth; i++)
+					System.out.print(DEPTH_SEPARATOR);
+				
 				System.out.format("%s value (terminal node) computed to be %d\n",
 						(node.isMaxNode())?"Max":"Min", node.utilityPassedDown);
+			}
 			
 			return node.utilityPassedDown;
 		}
@@ -141,9 +148,14 @@ public class homework {
 				
 				node.utilityPassedDown += estimatedUtilityGain;
 				
-				if(homework.DEBUG_MODE)
+				if(homework.DEBUG_MODE) {
+					
+					for(int i = 0; i < node.depth; i++)
+						System.out.print(DEPTH_SEPARATOR);
+				
 					System.out.format("%s value (cutoff node) computed to be %d\n",
 							(node.isMaxNode())?"Max":"Min", node.utilityPassedDown);
+				}
 				
 				return node.utilityPassedDown;
 			}
@@ -160,9 +172,12 @@ public class homework {
 						v = Math.max(v, result);
 						if(v >= beta)
 						{
-							if(homework.DEBUG_MODE)
-								System.out.println("Max value (pruned) computed to be "+v);
+							if(homework.DEBUG_MODE) {
+								for(int i = 0; i < node.depth; i++)
+									System.out.print(DEPTH_SEPARATOR);
 
+								System.out.println("Max value (pruned) computed to be "+v);
+							}
 							return v;
 						}
 						alpha = Math.max(v, alpha);
@@ -179,8 +194,13 @@ public class homework {
 						v = Math.min(v, result);
 						if(v <= alpha)
 						{
-							if(homework.DEBUG_MODE)
+							if(homework.DEBUG_MODE) {
+								
+								for(int i = 0; i < node.depth; i++)
+									System.out.print(DEPTH_SEPARATOR);
+								
 								System.out.println("Min value (pruned) computed to be "+v);
+							}
 
 							return v;
 						}
@@ -191,8 +211,13 @@ public class homework {
 
 		}
 		
-		if(homework.DEBUG_MODE)
+		if(homework.DEBUG_MODE) {
+			
+			for(int i = 0; i < node.depth; i++)
+				System.out.print(DEPTH_SEPARATOR);
+			
 			System.out.println("Minimax value computed to be "+v);
+		}
 		
 		return v;
 	}
@@ -280,24 +305,6 @@ public class homework {
 	{
 		return (long)(seconds * 1000 * 1000000);
 	}
-	
-	/**
-	 * Checks if the program is running out of time.
-	 */
-	/*private static boolean outtaTime()
-	{
-		nanosecondsElapsedSinceStart = updateElapsedTime();
-		long nanosecondsRemaining = timeStart - nanosecondsElapsedSinceStart;
-		
-		if(nanosecondsAllotted < nanosecondsBuffer)
-		{
-			System.out.println("Time limit exceeded! Forcing ending.");
-			return true;
-			
-		}
-		else 
-			return false;
-	}*/
 
 	public static void main(String[] args)
 	{
@@ -355,8 +362,9 @@ public class homework {
 					}
 				}
 				
-				if(homework.DEBUG_MODE)
-					System.out.println("Max value (root) computed to be "+bestChildUtility);
+				if (homework.DEBUG_MODE) {
+					System.out.println("Max value (root) computed to be " + bestChildUtility);
+				}
 			}
 			
 			finishSolved(bestChild);
