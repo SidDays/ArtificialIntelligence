@@ -18,10 +18,11 @@ import java.util.concurrent.TimeUnit;
 public class homework {
 
 	/** If true, prints node information to the console. */
-	public static final boolean DEBUG_MODE = true;
+	public static final boolean DEBUG_MODE = false;
 	
 	/** If the search space is sufficiently small, you might not require a cutoff. */
-	public static int defaultCutoff = 3; //Integer.MAX_VALUE;
+	public static int defaultCutoff = //3
+			Integer.MAX_VALUE;
 	
 	public static String inputFileName = "input.txt";
 	public static String outputFileName = "output.txt";
@@ -36,20 +37,13 @@ public class homework {
 	private static long timeStart, timeCurrent;
 	
 	/** Read from input, time allocated. */
-	public static float secondsAllotted;
+	public static float durSecondsAllotted;
 	
 	/** Convert above floating value into precise-r nanoseconds */
-	private static long nanosecondsAllotted;
+	private static long durNanosecondsAllotted;
 	
 	/** This value gets updated every time you check how much time has elapsed. */
-	private static long nanosecondsElapsedSinceStart;
-	
-	/**
-	 * Leave this much time before forcing termination (s -> ms -> ns).<br>
-	 * <br>
-	 * TODO Calibrate might help in calculating this.
-	 */
-	private static long nanosecondsBuffer = (long)(10*(1000)*(1000000));
+	private static long durNanosecondsElapsedSinceStart;
 	
 	/** The initial values for alpha and beta */
 	public static final int INF = Integer.MAX_VALUE;
@@ -68,9 +62,9 @@ public class homework {
 		FruitRageNode.p = Integer.parseInt(sc.nextLine());	
 		System.out.println("Fruit types (p) are "+FruitRageNode.p+".");
 		
-		secondsAllotted = Float.parseFloat(sc.nextLine());
-		nanosecondsAllotted = (long)(secondsAllotted * 1000 * 1000000);
-		System.out.println("Time remaining is "+nanosecondsAllotted + " ns.");
+		durSecondsAllotted = Float.parseFloat(sc.nextLine());
+		durNanosecondsAllotted = secondsToNanoseconds(durSecondsAllotted);
+		System.out.println("Time remaining is "+durSecondsAllotted + " seconds.");
 
 		// Read the grid
 		byte[][] gridInitial = new byte[FruitRageNode.n][FruitRageNode.n];
@@ -122,7 +116,10 @@ public class homework {
 			List<FruitRageNode> children = node.generateChildren();
 			
 			// TODO Sort children greedily (in reverse order of score) to maximize cutoff
-			Collections.sort(children);
+			if(node.isMaxNode())
+				Collections.sort(children, Collections.reverseOrder());
+			else
+				Collections.sort(children);
 			
 			if(node.depth >= cutoff) // Evaluation procedure
 			{
@@ -216,7 +213,7 @@ public class homework {
 			writerOutput = new PrintWriter(outputFileName, "UTF-8");
 			writerResult = new PrintWriter(resultFileName, "UTF-8");
 			
-			System.out.println("Solution printed to file:");
+			System.out.println("\nSolution printed to file:");
 			
 			// If no children - print blank lines (?)
 			if(bestChild == null)
@@ -239,7 +236,9 @@ public class homework {
 				writerOutput.println(bestChild.gridString());
 				
 				// Print game stats to result (as CSV?)
-				double secondsLeft = (TimeUnit.MILLISECONDS.convert(nanosecondsAllotted-nanosecondsElapsedSinceStart, TimeUnit.NANOSECONDS) / 1000.0);
+				// TODO BUGGED!!!
+				float secondsLeft = nanosecondsToSeconds(durNanosecondsAllotted-durNanosecondsElapsedSinceStart);
+				
 				System.out.format("Game results written to file:\n"
 						+ "Move score is %d.\n"
 						+ "Grid size (n) is %d.\n"
@@ -263,13 +262,23 @@ public class homework {
 	{
 		timeCurrent = System.nanoTime();
 		
-		nanosecondsElapsedSinceStart = timeCurrent - timeStart;
+		durNanosecondsElapsedSinceStart = timeCurrent - timeStart;
 
 		System.out.println("Elapsed time: "
-				+ (TimeUnit.MILLISECONDS.convert(nanosecondsElapsedSinceStart, TimeUnit.NANOSECONDS) / 1000.0)
+				+ nanosecondsToSeconds(durNanosecondsElapsedSinceStart)
 				+ " seconds.");
 		
-		return nanosecondsElapsedSinceStart;
+		return durNanosecondsElapsedSinceStart;
+	}
+	
+	public static float nanosecondsToSeconds(long nanoseconds)
+	{
+		return (TimeUnit.MILLISECONDS.convert(durNanosecondsElapsedSinceStart, TimeUnit.NANOSECONDS) / 1000.0f);
+	}
+	
+	public static long secondsToNanoseconds(float seconds)
+	{
+		return (long)(seconds * 1000 * 1000000);
 	}
 	
 	/**
@@ -500,13 +509,12 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 	/**
 	 * Allow the use of Collections.sort to sort node objects.<br>
 	 * <br>
-	 * The sort order is <b>descending</b> order of scores.
+	 * The sort order is used descending or max-nodes, ascending for min-nodes.
 	 */
 	@Override
 	public int compareTo(FruitRageNode otherNode)
 	{
-		// Ulta lol
-		return Integer.compare(otherNode.moveFromParentScore, this.moveFromParentScore);
+		return Integer.compare(this.moveFromParentScore, otherNode.moveFromParentScore);
 	}
 
 	/** String representation that contains the grid. */

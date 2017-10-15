@@ -12,8 +12,11 @@ import java.util.Scanner;
 public class AgentPlayer {
 	
 	private static final boolean REQUIRE_KEY_PRESS = false;
+	
+	/** System.nanoTime() values. */
+	// private static long timeStart, timeCurrent;
 
-	private static int turn = 0;
+	private static int turn;
 	
 	/**
 	 * Player scores. Determines who wins the game.
@@ -67,8 +70,8 @@ public class AgentPlayer {
 				Scanner inOutput = new Scanner(new File(homework.outputFileName));
 				
 				// Print remaining time
-				System.out.format("%.3f\n", homework.secondsAllotted);
-				writerInput.format("%.3f\n", homework.secondsAllotted);
+				System.out.format("%.3f\n", homework.durSecondsAllotted);
+				writerInput.format("%.3f\n", homework.durSecondsAllotted);
 				
 				// Consume the line containing the winning move
 				inOutput.nextLine();
@@ -128,6 +131,13 @@ public class AgentPlayer {
 	{
 
 		Scanner in = new Scanner(System.in);
+		
+		// Randomize first player
+		if(Math.random() > 0.5)
+			turn = 1;
+		else
+			turn = 0;
+		System.out.format("Player %d goes first.\n", (turn+1));
 
 		homework.main(new String[] {});
 
