@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Implements minimax algorithm and alpha-beta pruning.
@@ -18,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class homework {
 
 	/** If true, prints node information to the console. */
-	public static final boolean DEBUG_MODE = true;
+	public static final boolean DEBUG_MODE = false;
 	
 	private static String DEPTH_SEPARATOR = ".";
 	
@@ -38,10 +37,7 @@ public class homework {
 	/** System.nanoTime() values. */
 	private static long timeStart, timeCurrent;
 	
-	/** Read from input, time allocated. */
-	public static float durSecondsAllotted;
-	
-	/** Convert above floating value into precise-r nanoseconds */
+	/** Convert floating value read from input into precise-r nanoseconds */
 	private static long durNanosecondsAllotted;
 	
 	/** This value gets updated every time you check how much time has elapsed. */
@@ -64,8 +60,9 @@ public class homework {
 		FruitRageNode.p = Integer.parseInt(sc.nextLine());	
 		System.out.println("Fruit types (p) are "+FruitRageNode.p+".");
 		
-		durSecondsAllotted = Float.parseFloat(sc.nextLine());
+		float durSecondsAllotted = Float.parseFloat(sc.nextLine());
 		durNanosecondsAllotted = secondsToNanoseconds(durSecondsAllotted);
+		
 		System.out.println("Time remaining is "+durSecondsAllotted + " seconds.");
 
 		// Read the grid
@@ -261,16 +258,16 @@ public class homework {
 				writerOutput.println(bestChild.gridString());
 				
 				// Print game stats to result (as CSV?)
-				// TODO BUGGED!!!
-				float secondsLeft = nanosecondsToSeconds(durNanosecondsAllotted-durNanosecondsElapsedSinceStart);
+				float secondsLeft2 = nanosecondsToSeconds(durNanosecondsAllotted-durNanosecondsElapsedSinceStart);
 				
 				System.out.format("Game results written to file:\n"
 						+ "Move score is %d.\n"
 						+ "Grid size (n) is %d.\n"
 						+ "Fruit types (p) are %d.\n"
 						+ "Seconds left are %.3fs.\n",
-						bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft);
-				writerResult.format("%d,%d,%d,%.3f\n", bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft);
+						bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft2);
+				writerResult.format("%d,%d,%d,%.3f\n", 
+						bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft2);
 			}
 			
 		} catch (IOException e) {
@@ -298,7 +295,7 @@ public class homework {
 	
 	public static float nanosecondsToSeconds(long nanoseconds)
 	{
-		return (TimeUnit.MILLISECONDS.convert(durNanosecondsElapsedSinceStart, TimeUnit.NANOSECONDS) / 1000.0f);
+		return nanoseconds / (1000.0f * 1000000);
 	}
 	
 	public static long secondsToNanoseconds(float seconds)
