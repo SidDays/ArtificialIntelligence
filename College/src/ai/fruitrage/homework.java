@@ -22,8 +22,8 @@ public class homework {
 	private static String DEPTH_SEPARATOR = ".";
 	
 	/** If the search space is sufficiently small, you might not require a cutoff. */
-	public static int defaultCutoff = //4;
-			 Integer.MAX_VALUE;
+	public static int defaultCutoff = 3;
+			// Integer.MAX_VALUE;
 	
 	public static String inputFileName = "input.txt";
 	public static String outputFileName = "output.txt";
@@ -131,7 +131,7 @@ public class homework {
 				if(homework.DEBUG_MODE)
 					System.out.println("Triggered cutoff.");
 				
-				int estimatedUtilityGain = 0;
+				/*TODO Evaluation int estimatedUtilityGain = 0;
 				
 				for(int i = 0; i < children.size(); i++)
 				{
@@ -144,7 +144,7 @@ public class homework {
 					}
 				}
 				
-				node.utilityPassedDown += estimatedUtilityGain;
+				node.utilityPassedDown += estimatedUtilityGain;*/
 				
 				if(homework.DEBUG_MODE) {
 					
@@ -343,6 +343,10 @@ public class homework {
 			initNode.gravitate();
 			
 			List<FruitRageNode> children = initNode.generateChildren();
+			
+			// Maximize pruning?
+			Collections.sort(children, Collections.reverseOrder());
+			
 			FruitRageNode bestChild = null;
 			
 			
@@ -366,9 +370,9 @@ public class homework {
 					}
 				}
 				
-				if (homework.DEBUG_MODE) {
-					System.out.println("Max value (root) computed to be " + bestChildUtility);
-				}
+				//if (homework.DEBUG_MODE) {
+					System.out.println("Max value (root) computed to be " + bestChildUtility+".\n");
+				//}
 			}
 			
 			finishSolved(bestChild);
@@ -452,25 +456,6 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 		this.moveFromParent = move;
 		this.moveFromParentScore = score;
 	}
-
-	/**
-	 * Returns a List containing all the point objects corresponding to its grid
-	 * @return
-	 */
-	/*private List<FruitGridPoint> gridPoints()
-	{
-		List<FruitGridPoint> points = new ArrayList<>();
-
-		for(int i = 0; i < n; i++)
-			for(int j = 0; j < n; j++)
-			{
-				FruitGridPoint p = new FruitGridPoint(i, j, grid[i][j]);
-				points.add(p);
-			}
-
-
-		return points;
-	}*/
 
 	/**
 	 * Alters the current grid in such a way that 

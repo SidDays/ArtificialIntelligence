@@ -12,7 +12,10 @@ import java.util.Scanner;
  */
 public class AgentPlayer {
 
-	private static final boolean REQUIRE_KEY_PRESS = true;
+	private static final boolean REQUIRE_KEY_PRESS = false;
+	
+	/** If it is not 0 or 1, starting player is random. */
+	private static int startPlayerOverride = 1;
 
 	/** System.nanoTime() values. */
 	private static long timeCurrent;
@@ -28,8 +31,11 @@ public class AgentPlayer {
 	/** Number of fruit types (0 < p <= 9) */
 	private static int p;
 
-	/** The copy of the grid that the referee keeps to check score changes */
+	/** The copy of the grid that the referee keeps to check score changes. */
 	private static byte[][] gridReferee;
+	
+	/** The copy of the grid that is used to restore the grid when the program terminates. */
+	private static byte[][] gridBackup;
 
 	/** Is it player 1 or player 2 (0 or 1 in implementation) */
 	private static int turn;
@@ -39,6 +45,70 @@ public class AgentPlayer {
 	 */
 	private static int scores[] = {0, 0};
 	private static float times[] = {0, 0};
+	private static final String names[] = {"Siddhesh", "Rohit" };
+	
+	/**
+	 * Since the original grid gets butchered in the game process, this function
+	 * restores it to the one before the program began execution.
+	 */
+	private static void restoreBackup()
+	{
+		PrintWriter writerInput = null;
+		try {
+
+			writerInput = new PrintWriter(homework.inputFileName, "UTF-8");
+
+			System.out.println("\nRestoring old input backup to file:");
+
+			System.out.println(n);
+			writerInput.println(n);
+
+			System.out.println(p);
+			writerInput.println(p);
+
+			float durSecondsAllotted = homework.nanosecondsToSeconds(durNanosecondsAllotted);
+			System.out.format("%.3f\n", durSecondsAllotted);
+			writerInput.format("%.3f", durSecondsAllotted);
+			writerInput.println();
+
+			printGridToFileAndConsole(gridBackup, writerInput);
+			
+			System.out.println("Restore finished.");
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if(writerInput != null)
+				writerInput.close();
+		}
+	}
+	
+	/**
+	 * Prints a 2D byte array to the input file and also displays it in the console
+	 * @param grid
+	 * @param writer
+	 */
+	private static void printGridToFileAndConsole(byte[][] grid, PrintWriter writer)
+	{
+		// Print this grid to the file and console
+		for(int i = n-1; i >= 0 ; i--)
+		{
+			for(int j = 0; j < n; j++)
+			{
+				if(grid[i][j] == FruitRageNode.EMPTY)
+				{
+					System.out.print(FruitRageNode.EMPTY_CHAR);
+					writer.print(FruitRageNode.EMPTY_CHAR);
+				}
+				else {
+					System.out.print(grid[i][j]);
+					writer.print(grid[i][j]);
+				}
+			}
+			System.out.println();
+			writer.println();
+		}
+	}
 
 	/**
 	 * Initializes the values of n, p, duration alloted and the starting grid.
@@ -54,6 +124,8 @@ public class AgentPlayer {
 
 		// Read the grid
 		gridReferee = new byte[n][n];
+		gridBackup = new byte[n][n];
+		
 		for(int i = n - 1; i >=0 ; i--)
 		{
 			String row = inInput.nextLine();
@@ -62,9 +134,9 @@ public class AgentPlayer {
 				char ch = row.charAt(j);
 
 				if(ch == '*')
-					gridReferee[i][j] = FruitRageNode.EMPTY;
+					gridBackup[i][j] = gridReferee[i][j] = FruitRageNode.EMPTY;
 				else
-					gridReferee[i][j] = (byte)(ch - '0');
+					gridBackup[i][j] = gridReferee[i][j] = (byte)(ch - '0');
 			}
 		}
 	}
@@ -76,7 +148,13 @@ public class AgentPlayer {
 	 */
 	private static boolean playUntilGameOver()
 	{	
-		play();
+		try {
+			play();
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+		}
 		
 		PrintWriter writerInput = null;
 		try {
@@ -85,8 +163,8 @@ public class AgentPlayer {
 			if(numberOfEmptySquares(gridReferee) == n*n)
 			{
 				System.out.println("\nTHE GAME IS ALREADY OVER!");
-				System.out.format("\nScoreboard: %d (%.3f) | %d (%.3f)\n\n",
-						scores[0], times[0],
+				System.out.format("\nScoreboard: %s - %d (%.3f) | %s - %d (%.3f)\n\n",
+						names[0], scores[0], times[0], names[1],
 						scores[1], times[1]);
 
 				return false;
@@ -123,7 +201,7 @@ public class AgentPlayer {
 
 				// The next n lines contain the grid
 				byte[][] gridNew = new byte[n][n];
-				for(int i = n - 1; i >=0 ; i--)
+				for(int i = n-1; i >= 0 ; i--)
 				{
 					String row = inOutput.nextLine();
 					for(int j = 0; j < n; j++)
@@ -137,24 +215,7 @@ public class AgentPlayer {
 					}
 				}
 
-				// Print this grid to the file and console
-				for(int i = 0; i < n; i++)
-				{
-					for(int j = 0; j < n; j++)
-					{
-						if(gridNew[i][j] == FruitRageNode.EMPTY)
-						{
-							System.out.print(FruitRageNode.EMPTY_CHAR);
-							writerInput.print(FruitRageNode.EMPTY_CHAR);
-						}
-						else {
-							System.out.print(gridNew[i][j]);
-							writerInput.print(gridNew[i][j]);
-						}
-					}
-					System.out.println();
-					writerInput.println();
-				}
+				printGridToFileAndConsole(gridNew, writerInput);
 
 				// Update the score for player
 				scores[turn] += (int)(Math.pow(numberOfEmptySquares(gridNew)-numberOfEmptySquares(gridReferee), 2));
@@ -163,6 +224,9 @@ public class AgentPlayer {
 				gridReferee = gridNew;
 
 				inOutput.close();
+				
+				// Switch turn
+				turn = (turn + 1)%2;
 			}
 
 
@@ -221,18 +285,15 @@ public class AgentPlayer {
 	
 	public static void play()
 	{
-		System.out.println("\n----------[ Player "+turn+" ]----------\n");
+		System.out.println("\n----------[ Player "+names[turn]+" ]----------\n");
 		
-		// Call a different program if required
+		// TODO Call a different program if required
 		if(turn == 0) {
 			homework.main(new String[] {});
 		}
 		else {
-			homework.main(new String[] {});
+			homeworkOther.main(new String[] {});
 		}
-		
-		// Switch turn
-		turn = (turn + 1)%2;
 	}
 
 	/**
@@ -246,11 +307,19 @@ public class AgentPlayer {
 			Scanner inInput = new Scanner(new File(homework.inputFileName));
 
 			// Randomize first player
-			if(Math.random() > 0.5)
-				turn = 1;
+			if(startPlayerOverride == 0 || startPlayerOverride == 1)
+			{
+				turn = startPlayerOverride;
+			}
 			else
-				turn = 0;
-			System.out.format("Player %d goes first.\n", (turn));
+			{
+				if(Math.random() > 0.5)
+					turn = 1;
+				else
+					turn = 0;
+			}
+			
+			System.out.format("Player %s goes first.\n", (names[turn]));
 
 			// update n, p, durNanosecondsAllotted, gridReferee
 			readInputInitialize(inInput);
@@ -262,8 +331,9 @@ public class AgentPlayer {
 			while(playUntilGameOver())
 			{
 				
-				System.out.format("\nScoreboard: %d (%.3f) | %d (%.3f)\n",
-						scores[0], times[0],
+				System.out.format("\nScoreboard: %s - %d (%.3f) | %s - %d (%.3f)\n",
+						names[0], 
+						scores[0], times[0], names[1],
 						scores[1], times[1]);
 
 				if(REQUIRE_KEY_PRESS)
@@ -272,9 +342,10 @@ public class AgentPlayer {
 					in.nextLine();
 					System.out.println();
 				}
-
 				
 			}		
+			
+			restoreBackup();
 
 			in.close();
 		}
