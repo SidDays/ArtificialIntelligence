@@ -22,7 +22,7 @@ public class homework {
 	private static String DEPTH_SEPARATOR = ".";
 	
 	/** If the search space is sufficiently small, you might not require a cutoff. */
-	public static int defaultCutoff = 3;
+	public static int defaultCutoff = 2;
 			// Integer.MAX_VALUE;
 	
 	public static String inputFileName = "input.txt";
@@ -33,7 +33,7 @@ public class homework {
 	 * The result file format is:<br>
 	 * <code>moveFromParentScore,n,p,secondsRemaining</code>
 	 */
-	public static String resultFileName = "result.txt";
+	// public static String resultFileName = "result.txt";
 
 	/** System.nanoTime() values. */
 	private static long timeStart, timeCurrent;
@@ -227,14 +227,15 @@ public class homework {
 	private static void finishSolved(FruitRageNode bestChild)
 	{
 		// Print solution to console as well as file
-		PrintWriter writerOutput = null, writerResult = null;
+		PrintWriter writerOutput = null;
+		// PrintWriter writerResult = null;
 		try {
 			
 			// Refresh values of nanoseconds
 			updateElapsedTime();
 			
 			writerOutput = new PrintWriter(outputFileName, "UTF-8");
-			writerResult = new PrintWriter(resultFileName, "UTF-8");
+			// writerResult = new PrintWriter(resultFileName, "UTF-8");
 			
 			System.out.println("\nSolution printed to file:");
 			
@@ -247,7 +248,7 @@ public class homework {
 				System.out.println();
 				writerOutput.println();
 				
-				writerResult.println();
+				// writerResult.println();
 			}
 
 			else {
@@ -267,8 +268,9 @@ public class homework {
 						+ "Fruit types (p) are %d.\n"
 						+ "Seconds left are %.3fs.\n",
 						bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft2);
-				writerResult.format("%d,%d,%d,%.3f\n", 
-						bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft2);
+				
+				/*writerResult.format("%d,%d,%d,%.3f\n", 
+						bestChild.moveFromParentScore, FruitRageNode.n, FruitRageNode.p, secondsLeft2);*/
 			}
 			
 		} catch (IOException e) {
@@ -276,8 +278,8 @@ public class homework {
 		} finally {
 			if(writerOutput != null)
 				writerOutput.close();
-			if(writerResult != null)
-				writerResult.close();
+			/*if(writerResult != null)
+				writerResult.close();*/
 		}
 	}
 	
@@ -319,7 +321,7 @@ public class homework {
 		// Read contents of input file
 		try
 		{
-			// if input file specified - this block may be removed
+			// if input file specified
 			if(args.length > 0) {
 				inputFileName = args[0];
 
@@ -327,7 +329,7 @@ public class homework {
 				{
 					// Use the same pattern for other files now
 					outputFileName = inputFileName.toLowerCase().replace("input", "output");
-					resultFileName = inputFileName.toLowerCase().replace("input", "result");
+					// resultFileName = inputFileName.toLowerCase().replace("input", "result");
 				}
 			}
 

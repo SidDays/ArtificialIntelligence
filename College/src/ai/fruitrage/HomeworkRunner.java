@@ -1,7 +1,14 @@
-package ai.lizardnursery;
+package ai.fruitrage;
 
 import java.io.File;
 
+/**
+ * Runs the homework file for all input filenames that match a pattern, and
+ * generates the correspondingly named output file. You <b>must</b> add code to
+ * allow the program to accept input filename in String[] args.
+ * 
+ * @author Siddhesh Karekar
+ */
 public class HomeworkRunner {
 
 	public static void main(String[] args) {
@@ -13,8 +20,7 @@ public class HomeworkRunner {
 		{
 		    if (file.isFile()) 
 		    {
-		
-		    	//System.out.println(file.getName());
+		    	System.out.println("Running the game for input file "+file.getName()+".");
 		    	
 		    	// Check if it is an input filename
 		    	if(file.getName().toLowerCase().endsWith(".txt") && 
