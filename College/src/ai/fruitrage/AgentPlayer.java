@@ -15,7 +15,7 @@ public class AgentPlayer {
 	private static final boolean REQUIRE_KEY_PRESS = false;
 	
 	/** If it is not 0 or 1, starting player is random. */
-	private static int startPlayerOverride = 1;
+	private static int startPlayerOverride = 0;
 
 	/** System.nanoTime() values. */
 	private static long timeCurrent;
@@ -292,7 +292,7 @@ public class AgentPlayer {
 			homework.main(new String[] {});
 		}
 		else {
-			homeworkOther.main(new String[] {});
+			homework.main(new String[] {});
 		}
 	}
 

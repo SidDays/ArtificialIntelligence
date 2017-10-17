@@ -22,7 +22,7 @@ public class homework {
 	private static String DEPTH_SEPARATOR = ".";
 	
 	/** If the search space is sufficiently small, you might not require a cutoff. */
-	public static int defaultCutoff = 2;
+	public static int defaultCutoff = 3;
 			// Integer.MAX_VALUE;
 	
 	public static String inputFileName = "input.txt";
