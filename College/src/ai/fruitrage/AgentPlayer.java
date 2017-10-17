@@ -45,7 +45,7 @@ public class AgentPlayer {
 	 */
 	private static int scores[] = {0, 0};
 	private static float times[] = {0, 0};
-	private static final String names[] = {"Siddhesh", "Rohit" };
+	private static final String names[] = {"Siddhesh", "Chaitanya" };
 	
 	/**
 	 * Since the original grid gets butchered in the game process, this function
