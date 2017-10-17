@@ -18,9 +18,9 @@ public class homework
 {
 
 	/** If true, prints node information to the console. */
-	public static final boolean DEBUG_MODE = false;
+	// public static final boolean DEBUG_MODE = false;
 
-	private static String DEPTH_SEPARATOR = ".";
+	// private static String DEPTH_SEPARATOR = ".";
 
 	/**
 	 * If the search space is sufficiently small, you might not require a
@@ -92,17 +92,18 @@ public class homework
 	 * a byte array corresponding to the initial grid.
 	 */
 	private static byte[][] readInput(Scanner sc) {
+		
 		// Start reading input
 		FruitRageNode.n = Integer.parseInt(sc.nextLine());
-		System.out.println("Grid size (n) is " + FruitRageNode.n + ".");
+		// System.out.println("Grid size (n) is " + FruitRageNode.n + ".");
 
 		FruitRageNode.p = Integer.parseInt(sc.nextLine());
-		System.out.println("Fruit types (p) are " + FruitRageNode.p + ".");
+		// System.out.println("Fruit types (p) are " + FruitRageNode.p + ".");
 
 		float durSecondsAllotted = Float.parseFloat(sc.nextLine());
 		durAllotted = secondsToNanoseconds(durSecondsAllotted);
 
-		System.out.println("Time remaining is " + durSecondsAllotted + " seconds.");
+		// System.out.println("Time remaining is " + durSecondsAllotted + " seconds.");
 
 		// Read the grid
 		byte[][] gridInitial = new byte[FruitRageNode.n][FruitRageNode.n];
@@ -131,16 +132,18 @@ public class homework
 		int v;
 
 		if (node.isTerminalNode()) {
-			if (homework.DEBUG_MODE) {
+			
+			/*if (homework.DEBUG_MODE) {
 				for (int i = 0; i < node.depth; i++)
 					System.out.print(DEPTH_SEPARATOR);
 
 				System.out.format("%s value (terminal node) computed to be %d\n", (node.isMaxNode()) ? "Max" : "Min",
 						node.utilityPassedDown);
-			}
+			}*/
 
 			return node.utilityPassedDown;
-		} else {
+		} 
+		else {
 			// Not a terminal node
 
 			// Time-Cutoff condition
@@ -171,17 +174,15 @@ public class homework
 
 			// Evaluation procedure for depth-cutoff
 			if (node.depth >= cutoff) {
-				if (homework.DEBUG_MODE)
-					System.out.println("Triggered cutoff.");
-
-				if (homework.DEBUG_MODE) {
+				
+				/*if (homework.DEBUG_MODE) {
 
 					for (int i = 0; i < node.depth; i++)
 						System.out.print(DEPTH_SEPARATOR);
 
 					System.out.format("%s value (cutoff node) computed to be %d\n", (node.isMaxNode()) ? "Max" : "Min",
 							node.utilityPassedDown);
-				}
+				}*/
 
 				return node.utilityPassedDown;
 			} else {
@@ -196,12 +197,13 @@ public class homework
 						if (v >= beta)
 						{
 							
-							if (homework.DEBUG_MODE) {
+							/*if (homework.DEBUG_MODE) {
 								for (int i = 0; i < node.depth; i++)
 									System.out.print(DEPTH_SEPARATOR);
 
 								System.out.println("Max value (pruned) computed to be " + v);
-							}
+							}*/
+							
 							return v;
 						}
 						alpha = Math.max(v, alpha);
@@ -216,13 +218,13 @@ public class homework
 						v = Math.min(v, result);
 						if (v <= alpha)
 						{
-							if (homework.DEBUG_MODE) {
+							/*if (homework.DEBUG_MODE) {
 
 								for (int i = 0; i < node.depth; i++)
 									System.out.print(DEPTH_SEPARATOR);
 
 								System.out.println("Min value (pruned) computed to be " + v);
-							}
+							}*/
 
 							return v;
 						}
@@ -233,13 +235,13 @@ public class homework
 
 		}
 
-		if (homework.DEBUG_MODE) {
+		/*if (homework.DEBUG_MODE) {
 
 			for (int i = 0; i < node.depth; i++)
 				System.out.print(DEPTH_SEPARATOR);
 
 			System.out.println("Minimax value computed to be " + v);
-		}
+		}*/
 
 		return v;
 	}
@@ -289,17 +291,19 @@ public class homework
 		// Print solution to console as well as file
 		PrintWriter writerOutput = null;
 		// PrintWriter writerResult = null;
-		try {
-
-			
+		try 
+		{
 
 			writerOutput = new PrintWriter(outputFileName, "UTF-8");
 			// writerResult = new PrintWriter(resultFileName, "UTF-8");
 
-			System.out.println("\nSolution printed to file:");
+			System.out.println("\nSolution: "+bestChild.moveFromParent);
+			
+			System.out.printf("Seconds left: %.3fs\n",nanosecondsToSeconds(durRemaining));
 
 			// If no children - print blank lines (?)
-			if (bestChild == null) {
+			/* if (bestChild == null) 
+			{
 				System.out.println();
 				writerOutput.println();
 
@@ -309,7 +313,8 @@ public class homework
 				// writerResult.println();
 			}
 
-			else {
+			else
+			{
 
 				System.out.println(bestChild.moveFromParent);
 				writerOutput.println(bestChild.moveFromParent);
@@ -330,7 +335,7 @@ public class homework
 								FruitRageNode.p,
 								nanosecondsToSeconds(durRemaining));
 
-			}
+			}*/
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -356,9 +361,8 @@ public class homework
 		durElapsedSinceStart = timeCurrent - timeStart;
 		durRemaining = durAllotted - durElapsedSinceStart;
 
-		if (DEBUG_MODE)
-			System.out.println("Elapsed time: " + nanosecondsToSeconds(durElapsedSinceStart) + " seconds.");
-
+		/*if (DEBUG_MODE)
+			System.out.println("Elapsed time: " + nanosecondsToSeconds(durElapsedSinceStart) + " seconds."); */
 		return durRemaining;
 	}
 
@@ -398,7 +402,7 @@ public class homework
 			// Create starting node
 			FruitRageNode initNode = new FruitRageNode(gridInitial);
 
-			System.out.println("\nStarting configuration: \n" + initNode + "\n");
+			// System.out.println("\nStarting configuration: \n" + initNode + "\n");
 
 			initNode.gravitate();
 
@@ -420,24 +424,26 @@ public class homework
 			if (children.isEmpty()) {
 				// moveToPlay = "";
 				// Handle this in finish(FruitRageNode)
-			} else // Find the move to perform
+			} 
+			else // Find the move to perform
 			{
 
 				// Check time remaining
 				getRemainingTime();
-				System.out.printf("Remaining time is %.3f seconds.\n", nanosecondsToSeconds(durRemaining));
+				// System.out.printf("Remaining time is %.3f seconds.\n", nanosecondsToSeconds(durRemaining));
 
 				// Approximately calculate how much time the depth-searching in
 				// TOTAL should take.
 				durAllotToMove = durRemaining / children.size() * 2;
-				System.out.printf("The move search for all depths is allowed to be %.3f seconds.\n",
-						nanosecondsToSeconds(durAllotToMove));
+				
+				/*System.out.printf("The move search for all depths is allowed to be %.3f seconds.\n",
+						nanosecondsToSeconds(durAllotToMove));*/
 
 				timeMovesearchStart = System.nanoTime();
 
 				// depth is global
 				for (depth = 1; depth < MAX_DEPTH; depth++) {
-					System.out.println("\nGoing to depth " + depth + ".");
+					// System.out.println("\nGoing to depth " + depth + ".");
 
 					bestChild = null;
 					bestChildUtility = -INF;
@@ -453,24 +459,26 @@ public class homework
 						}
 					}
 
-					if (!timeLimitExceeded) {
+					if (!timeLimitExceeded)
+					{
 						bestChildSaved = bestChild;
 						bestChildUtilitySaved = bestChildUtility;
 
-						System.out.println("At this depth, max value (root) is " + bestChildUtilitySaved + " given by "
+						/*System.out.println("At this depth, max value (root) is " + bestChildUtilitySaved + " given by "
 								+ bestChildSaved.moveFromParent + " (" + bestChildSaved.moveFromParentScore
-								+ " pts).\n");
+								+ " pts).\n");*/
 
 						long durIterationsSoFar = System.nanoTime() - timeMovesearchStart;
-						System.out.printf("So far, depth searching took %.3f seconds.\n",
-								nanosecondsToSeconds(durIterationsSoFar));
+						/*System.out.printf("So far, depth searching took %.3f seconds.\n",
+								nanosecondsToSeconds(durIterationsSoFar));*/
 
 						if (durIterationsSoFar * (depth) > durAllotToMove) {
-							System.out.println("Searching the next depth will be too expensive.");
+							// System.out.println("Searching the next depth will be too expensive.");
 							break;
 						}
 
-					} else {
+					} 
+					else {
 						break;
 					}
 
@@ -636,8 +644,6 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 	 * @return
 	 */
 	public List<FruitRageNode> generateChildren() {
-		if (homework.DEBUG_MODE)
-			System.out.println("Generating children...");
 
 		List<FruitRageNode> children = new ArrayList<>();
 
@@ -677,8 +683,8 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 
 		// We now have all the points, upon selection of which a new child is
 		// formed
-		if (homework.DEBUG_MODE)
-			System.out.format("%d possible move(s) from this node.\n", groupPoints.size());
+		/*if (homework.DEBUG_MODE)
+			System.out.format("%d possible move(s) from this node.\n", groupPoints.size());*/
 
 		// These will be ordered in the minimax call.
 		for (List<FruitGridPoint> action : groupPoints) {
