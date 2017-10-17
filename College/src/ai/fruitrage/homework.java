@@ -18,11 +18,11 @@ public class homework {
 
 	/** If true, prints node information to the console. */
 	public static final boolean DEBUG_MODE = false;
-	
+		
 	private static String DEPTH_SEPARATOR = ".";
 	
 	/** If the search space is sufficiently small, you might not require a cutoff. */
-	public static int defaultCutoff = 3;
+	public static int defaultCutoff = 2;
 			// Integer.MAX_VALUE;
 	
 	public static String inputFileName = "input.txt";
@@ -33,8 +33,8 @@ public class homework {
 	 * The result file format is:<br>
 	 * <code>moveFromParentScore,n,p,secondsRemaining</code>
 	 */
-	// public static String resultFileName = "result.txt";
-
+	public static String resultFileName = "result.csv";
+	
 	/** System.nanoTime() values. */
 	private static long timeStart, timeCurrent;
 	
@@ -91,11 +91,6 @@ public class homework {
 	 */
 	private static int minimaxValue(FruitRageNode node, int alpha, int beta, int cutoff)
 	{
-		/*if(homework.DEBUG_MODE) {
-			System.out.format("Computing minimax value for %snode\n",
-					(node.isMaxNode())?"max":"min");
-			// System.out.println(node);
-		}*/
 		
 		int v;
 

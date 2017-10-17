@@ -20,14 +20,12 @@ public class HomeworkRunner {
 		{
 		    if (file.isFile()) 
 		    {
-		    	System.out.println("Running the game for input file "+file.getName()+".");
-		    	
 		    	// Check if it is an input filename
 		    	if(file.getName().toLowerCase().endsWith(".txt") && 
 		    			file.getName().toLowerCase().startsWith("input"))
 		    	{
 		    		// Run the homework program
-		    		System.out.println("Executing for input file: "+file.getName());
+		    		System.out.println("Running the game for input file "+file.getName()+".");
 		    		homework.main(new String[] { file.getName() });
 		    	}
 		    	System.out.println();
