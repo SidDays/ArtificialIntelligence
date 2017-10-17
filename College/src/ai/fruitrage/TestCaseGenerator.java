@@ -15,7 +15,7 @@ public class TestCaseGenerator {
 	
 	private static final String FILENAME_SUFFIX_DEFAULT = "";
 	
-	private static final double HOLE_PROBABILITY = 0.1;
+	private static final double HOLE_PROBABILITY = 0.01;
 	
 	private static final Random RAND = new Random();
 	
@@ -23,36 +23,28 @@ public class TestCaseGenerator {
 	 * Alters the current grid in such a way that 
 	 * all empty spaces rise to the top.
 	 */
-	private static void gravitate(byte[][] grid, int N)
+	private static void gravitate(byte[][] grid, int n)
 	{
 
 		// Go column-wise
-		for(int j = 0; j < N; j++)
+		for (int j = 0; j < n; j++)
 		{
-			/* Go downwards the column fixing the top element
-			 * if EMPTY is found anywhere, swap it with the top element */
-			for(int i = N-1; i > 0; i--)
+
+			for (int i = (n-1)-1; i >= 0; i--)
 			{
 				// No need to swap if the top element already contains EMPTY
-				if(grid[i][j] == FruitRageNode.EMPTY)
-					continue;
-
-				for(int k = i-1; k >= 0; k--)
+				if (grid[i][j] == FruitRageNode.EMPTY)
 				{
-					if(grid[k][j] == FruitRageNode.EMPTY)
+					for(int k = i; k < n-1; k++)
 					{
-						// swap
-						byte temp = grid[k][j];
-						grid[k][j] = grid[i][j];
-						grid[i][j] = temp;
-
-						break;
+						grid[k][j] = grid[k+1][j];
 					}
+					grid[n-1][j] = FruitRageNode.EMPTY;
 				}
 			}
 		}
 	}
-	
+
 	public static void createTestCase()
 	{
 		createTestCase(N_DEFAULT, P_DEFAULT, TIME_LIMIT_DEFAULT, FILENAME_SUFFIX_DEFAULT);
@@ -138,9 +130,9 @@ public class TestCaseGenerator {
 
 	public static void main(String[] args) {
 		
-		for(int n = 7; n <= 9; n++)
+		for(int n = 5; n <= 5; n++)
 		{
-			for(int p = 2; p <= 4; p++)
+			for(int p = 6; p <= 6; p++)
 			{
 				float time = getRandomTime(TIME_LIMIT_DEFAULT);
 				String suffix = " "+n+" "+p+" "+time;

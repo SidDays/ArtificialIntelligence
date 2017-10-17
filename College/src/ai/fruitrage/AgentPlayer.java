@@ -8,14 +8,25 @@ import java.io.PrintWriter;
 import java.util.Scanner;
 
 /**
- *
+ * Pits one homework program against another.
+ * 
+ * @author Siddhesh Karekar
  */
 public class AgentPlayer {
 
 	private static final boolean REQUIRE_KEY_PRESS = false;
 	
 	/** If it is not 0 or 1, starting player is random. */
-	private static int startPlayerOverride = 0;
+	private static int startPlayerOverride = -1;
+	
+	/**
+	 * Player scores. Determines who wins the game.
+	 */
+	private static int scores[] = {0, 0};
+	private static float times[] = {0, 0};
+	
+	// TODO
+	private static final String names[] = {"Rohit", "Siddhesh" };
 
 	/** System.nanoTime() values. */
 	private static long timeCurrent;
@@ -40,13 +51,6 @@ public class AgentPlayer {
 	/** Is it player 1 or player 2 (0 or 1 in implementation) */
 	private static int turn;
 
-	/**
-	 * Player scores. Determines who wins the game.
-	 */
-	private static int scores[] = {0, 0};
-	private static float times[] = {0, 0};
-	private static final String names[] = {"Siddhesh", "Chaitanya" };
-	
 	/**
 	 * Since the original grid gets butchered in the game process, this function
 	 * restores it to the one before the program began execution.
@@ -289,7 +293,7 @@ public class AgentPlayer {
 		
 		// TODO Call a different program if required
 		if(turn == 0) {
-			homework.main(new String[] {});
+			homeworkRohit.main(new String[] {});
 		}
 		else {
 			homework.main(new String[] {});
