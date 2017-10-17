@@ -17,7 +17,7 @@ public class AgentPlayer {
 	private static final boolean REQUIRE_KEY_PRESS = false;
 	
 	/** If it is not 0 or 1, starting player is random. */
-	private static int startPlayerOverride = -1;
+	private static int startPlayerOverride = 1;
 	
 	/**
 	 * Player scores. Determines who wins the game.
@@ -26,7 +26,7 @@ public class AgentPlayer {
 	private static float times[] = {0, 0};
 	
 	// TODO
-	private static final String names[] = {"Rohit", "Siddhesh" };
+	private static final String names[] = {"Siddhesh1", "Siddhesh2" };
 
 	/** System.nanoTime() values. */
 	private static long timeCurrent;
@@ -212,7 +212,7 @@ public class AgentPlayer {
 					{
 						char ch = row.charAt(j);
 
-						if(ch == '*')
+						if(ch == FruitRageNode.EMPTY_CHAR)
 							gridNew[i][j] = FruitRageNode.EMPTY;
 						else
 							gridNew[i][j] = (byte)(ch - '0');
@@ -222,7 +222,15 @@ public class AgentPlayer {
 				printGridToFileAndConsole(gridNew, writerInput);
 
 				// Update the score for player
-				scores[turn] += (int)(Math.pow(numberOfEmptySquares(gridNew)-numberOfEmptySquares(gridReferee), 2));
+				int newEmpty = numberOfEmptySquares(gridNew);
+				int oldEmpty = numberOfEmptySquares(gridReferee);
+				int scoreDifference = (int)(Math.pow(newEmpty-oldEmpty, 2));
+				if(newEmpty < oldEmpty)
+				{
+					System.err.println("Player "+names[turn]+" might be adding new squares!");
+					scoreDifference = -scoreDifference;
+				}
+				scores[turn] += scoreDifference;
 
 				// Make this the new referee grid
 				gridReferee = gridNew;
@@ -293,7 +301,7 @@ public class AgentPlayer {
 		
 		// TODO Call a different program if required
 		if(turn == 0) {
-			homeworkRohit.main(new String[] {});
+			homework.main(new String[] {});
 		}
 		else {
 			homework.main(new String[] {});

@@ -15,7 +15,7 @@ public class TestCaseGenerator {
 	
 	private static final String FILENAME_SUFFIX_DEFAULT = "";
 	
-	private static final double HOLE_PROBABILITY = 0.01;
+	private static final double HOLE_PROBABILITY = 0.1;
 	
 	private static final Random RAND = new Random();
 	
@@ -130,7 +130,7 @@ public class TestCaseGenerator {
 
 	public static void main(String[] args) {
 		
-		for(int n = 5; n <= 5; n++)
+		/*for(int n = 7; n <= 7; n++)
 		{
 			for(int p = 6; p <= 6; p++)
 			{
@@ -138,7 +138,9 @@ public class TestCaseGenerator {
 				String suffix = " "+n+" "+p+" "+time;
 				createTestCase(n, p, time, suffix);
 			}
-		}
+		}*/
+		
+		createTestCase(12, 4, 120, "");
 		
 	}
 

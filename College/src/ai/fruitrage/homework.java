@@ -7,7 +7,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.Scanner;
 
 /**
@@ -59,14 +58,15 @@ public class homework
 
 	private static long durAllotToMove;
 
-	// TODO What if this happened when depth was 1?
-	private static boolean timeLimitExceeded = false;
+	// What if this happened when depth was 1?
+	/** Must be initialized */
+	private static boolean timeLimitExceeded;
 
 	/**
-	 * TODO When these many nanoseconds (seconds * 10^9) are left, force the program
+	 * When these many nanoseconds (seconds * 10^9) are left, force the program
 	 * to return the move already selected or a random one.
 	 */
-	public static long durLimit = (long) (1.0f * 1000 * 1000000);
+	// private static long durLimit = (long) (1.0f * 1000 * 1000000);
 
 	// Other
 
@@ -143,7 +143,7 @@ public class homework
 		} else {
 			// Not a terminal node
 
-			// TODO Time-Cutoff condition
+			// Time-Cutoff condition
 			long durElapsedOnMoveSoFar = System.nanoTime() - timeMovesearchStart;
 			if (timeLimitExceeded || durElapsedOnMoveSoFar > durAllotToMove) {
 
@@ -266,7 +266,7 @@ public class homework
 	 *            You must generate the node's children for this kind of
 	 *            evaluation.
 	 */
-	private static int estimateUtilityGain(FruitRageNode node, List<FruitRageNode> children) {
+	/*private static int estimateUtilityGain(FruitRageNode node, List<FruitRageNode> children) {
 		int estimatedUtilityGain = 0;
 
 		for (int i = 0; i < children.size(); i++) {
@@ -278,7 +278,7 @@ public class homework
 		}
 
 		return estimatedUtilityGain;
-	}
+	}*/
 
 	/**
 	 * TODO
@@ -374,6 +374,8 @@ public class homework
 		Scanner inInput;
 
 		timeStart = System.nanoTime();
+		
+		timeLimitExceeded = false;
 
 		// Read contents of input file
 		try {
@@ -463,7 +465,7 @@ public class homework
 						System.out.printf("So far, depth searching took %.3f seconds.\n",
 								nanosecondsToSeconds(durIterationsSoFar));
 
-						if (durAllotToMove - durIterationsSoFar * depth <= 0) {
+						if (durIterationsSoFar * (depth) > durAllotToMove) {
 							System.out.println("Searching the next depth will be too expensive.");
 							break;
 						}
@@ -711,11 +713,6 @@ class FruitRageNode implements Comparable<FruitRageNode> {
 
 			// Apply gravity
 			child.gravitate();
-
-			/*
-			 * if(homework.DEBUG_MODE) { System.out.println("Adding child...");
-			 * // System.out.println(child); }
-			 */
 
 			// add it to children! whoopee!
 			children.add(child);
