@@ -296,46 +296,28 @@ public class homework
 
 			writerOutput = new PrintWriter(outputFileName, "UTF-8");
 			// writerResult = new PrintWriter(resultFileName, "UTF-8");
-
-			System.out.println("\nSolution: "+bestChild.moveFromParent);
-			
-			System.out.printf("Seconds left: %.3fs\n",nanosecondsToSeconds(durRemaining));
+				
+			// Refresh values of nanoseconds
+			// getRemainingTime();
+			// System.out.printf("Seconds left: %.3fs\n",nanosecondsToSeconds(durRemaining));
 
 			// If no children - print blank lines (?)
-			/* if (bestChild == null) 
+			if (bestChild == null) 
 			{
-				System.out.println();
 				writerOutput.println();
 
-				System.out.println();
 				writerOutput.println();
 
-				// writerResult.println();
 			}
-
 			else
 			{
-
-				System.out.println(bestChild.moveFromParent);
+				System.out.println("\nSolution: "+bestChild.moveFromParent);
 				writerOutput.println(bestChild.moveFromParent);
 
-				System.out.println(bestChild.gridString());
+				// System.out.println(bestChild.gridString());
 				writerOutput.println(bestChild.gridString());
 
-				// Refresh values of nanoseconds
-				getRemainingTime();
-
-				System.out.format("\nGame results:\n" 
-								+ "Move score is %d.\n" 
-								+ "Grid size (n) is %d.\n"
-								+ "Fruit types (p) are %d.\n" 
-								+ "Seconds left are %.3fs.\n",
-								bestChild.moveFromParentScore, 
-								FruitRageNode.n, 
-								FruitRageNode.p,
-								nanosecondsToSeconds(durRemaining));
-
-			}*/
+			}
 
 		} catch (IOException e) {
 			e.printStackTrace();
