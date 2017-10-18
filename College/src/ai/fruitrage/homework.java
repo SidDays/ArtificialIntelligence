@@ -151,8 +151,10 @@ public class homework
 			if (timeLimitExceeded || durElapsedOnMoveSoFar > durAllotToMove) {
 
 				if (!timeLimitExceeded) {
-					System.out.printf("Time limit exceeded mid-iteration - %.3f > %.3f.\n",
-							nanosecondsToSeconds(durElapsedOnMoveSoFar), nanosecondsToSeconds(durAllotToMove));
+					
+					/*System.out.printf("Time limit exceeded mid-iteration - %.3f > %.3f.\n",
+							nanosecondsToSeconds(durElapsedOnMoveSoFar), nanosecondsToSeconds(durAllotToMove));*/
+					
 					timeLimitExceeded = true;
 					
 					if(depth == 1)
@@ -465,9 +467,13 @@ public class homework
 					}
 
 				}
+				
+				if (timeLimitExceeded && depth > 1)
+					depth -= 1;
 
 				System.out.println("Final max value (root) is " + bestChildUtilitySaved + " given by "
-						+ bestChildSaved.moveFromParent + " (" + bestChildSaved.moveFromParentScore + " pts).");
+						+ bestChildSaved.moveFromParent + " (" + bestChildSaved.moveFromParentScore
+						+ " pts) for cutoff " + depth + ".");
 			}
 
 			finishSolved(bestChildSaved);
