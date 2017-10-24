@@ -9,7 +9,7 @@ public class TestCaseGenerator {
 	private static final int N_DEFAULT = 20;
 
 	/** Number of fruit types (0 < p <= 9) */
-	private static final int P_DEFAULT = 4;
+	private static final int P_DEFAULT = 4; 
 	
 	private static final float TIME_LIMIT_DEFAULT = 300f;
 	
