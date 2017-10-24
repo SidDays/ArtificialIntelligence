@@ -25,7 +25,6 @@ public class AgentPlayer {
 	private static int scores[] = {0, 0};
 	private static float times[] = {0, 0};
 	
-	// TODO
 	private static final String names[] = {"Siddhesh1", "Siddhesh2" };
 
 	/** System.nanoTime() values. */
