@@ -7,6 +7,7 @@ public class TestCaseGenerator {
 
 	/** Width and height of the square board (0 < n <= 26) */
 	private static final int N_DEFAULT = 20;
+	
 
 	/** Number of fruit types (0 < p <= 9) */
 	private static final int P_DEFAULT = 4; 
