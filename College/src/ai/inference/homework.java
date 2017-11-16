@@ -65,7 +65,7 @@ public class homework
 	
 	// private static List<Sentence> kbSentences;
 	
-	private static final List<Predicate> queriesNegated = new ArrayList<>();
+	private static List<Predicate> queriesNegated = new ArrayList<>();
 	
 	public static String inputFileName = "input.txt";
 	public static String outputFileName = "output.txt";
@@ -74,6 +74,14 @@ public class homework
 
 	/** System.nanoTime() values. */
 	private static long timeStart, timeCurrent;
+	
+	private static void initialize()
+	{
+		sKB = 0;
+		v = 0;
+		steps = 0;
+		queriesNegated = new ArrayList<>();
+	}
 
 	/**
 	 * @param in
@@ -115,7 +123,7 @@ public class homework
 			if(DEBUG)
 				System.out.printf("Current sentence: %s\n", sentence);
 			
-			// TODO [?] Discard sentences with two contradicting predicates
+			// TODO [?] Handle sentences with two contradicting predicates
 			
 			putInKB(sentence);
 
@@ -175,7 +183,7 @@ public class homework
 	}
 	
 
-	private static Map<Variable, Constant> unify(Predicate p1, Predicate p2)
+	private static Map<Variable, Argument> unify(Predicate p1, Predicate p2)
 	{
 		if(DEBUG)
 		{
@@ -188,7 +196,7 @@ public class homework
 			return null;
 		}
 		
-		Map<Variable, Constant> substitution = new HashMap<>();
+		Map<Variable, Argument> substitution = new HashMap<>();
 		
 		boolean valid = true;
 		
@@ -307,47 +315,99 @@ public class homework
 			}
 			
 			// Check if the variable common substitutions are satisfied
-			for(List<Variable> l : commonSubstitutedVariables)
+			List<Argument> listCommonSubs = new ArrayList<>();
+
+			for(List<Variable> listCommonVars : commonSubstitutedVariables)
 			{
-				Variable var0 = l.get(0);
+				// Resue the same list of common substitutions
+				listCommonSubs.clear();
 				
-				Constant commonValue = substitution.get(var0);
+				if(DEBUG) System.out.printf("Finished processing arguments. Checking these variables for mappings: %s\n", listCommonVars);
 				
-				// If all of these variables do NOT share the same mapping - invalid
-				if(commonValue == null)
+				for(Variable var : listCommonVars)
 				{
-					valid = false;
+					Argument argSub = substitution.get(var);
+					if(argSub != null)
+						listCommonSubs.add(argSub);
 				}
-				else
+				
+				// If none of these variables have a mapping, assign a temp variable to map them to
+				if(listCommonSubs.isEmpty())
 				{
-					for(int i = 1; i < l.size(); i++)
+					Variable varTemp = new Variable("temp"+steps);
+					for(Variable var : listCommonVars)
 					{
-						Constant otherValue = substitution.get(l.get(i));
-						if(otherValue == null || !otherValue.equals(commonValue))
-						{
-							valid = false;
-							break;
-						}
+						substitution.put(var, varTemp);
+						
+						if(DEBUG) System.out.printf("Adding var-var substitution {%s/%s}\n", var, varTemp);
 					}
 					
-					// Thus, they do share the same value.
-					// It might be a single value, OR no value at all!
 					if(DEBUG)
 					{
 						System.out.printf("Thus, the variables ");
-						for(int i = 0; i < l.size(); i++)
+						for(int i = 0; i < listCommonVars.size(); i++)
 						{
-							System.out.printf("%s", l.get(i));
-							if(i < l.size()-1)
+							System.out.printf("%s", listCommonVars.get(i));
+							if(i < listCommonVars.size()-1)
 								System.out.printf(", ");
 						}
 						System.out.println(" can be unified.");
 					}
 				}
+				else
+				{
+					// Every non-null mapped value is (probably) a constant
+					Constant commonValue = (Constant) listCommonSubs.get(0);
+					
+					// Every other mapping MUST equal this
+					for(int csub_i = 1; csub_i < listCommonSubs.size(); csub_i++)
+					{
+						Constant otherValue = (Constant) listCommonSubs.get(csub_i);
+						
+						if(!otherValue.equals(commonValue))
+						{
+							valid = false;
+							
+							if(DEBUG) System.out.printf("Substitution invalid: Common variables clash, %s != %s.\n", otherValue, commonValue);
+							
+							break;
+						}
+					}
+					
+					// Continue only if no clash yet
+					if(valid) 
+					{
+
+						/*
+						 * If it gets here, every substitution points to the same
+						 * value, and that value can be added as a substitution for
+						 * all the variables in the common-list
+						 */
+						for(Variable var : listCommonVars)
+						{
+							substitution.put(var, commonValue);
+
+							if(DEBUG) System.out.printf("Adding var-const substitution {%s/%s}\n", var, commonValue);
+						}
+
+						if(DEBUG)
+						{
+							System.out.printf("Thus, the variables ");
+							for(int i = 0; i < listCommonVars.size(); i++)
+							{
+								System.out.printf("%s", listCommonVars.get(i));
+								if(i < listCommonVars.size()-1)
+									System.out.printf(", ");
+							}
+							System.out.println(" can be unified.");
+						}
+					}
+				}
 			}
 			
 			// If invalid, clear the substitution - these cannot be unified.
-			if(!valid) {
+			if(!valid) 
+			{
 				substitution.clear();
 				substitution = null;
 				
@@ -369,18 +429,17 @@ public class homework
 	 * @param substitution
 	 * @return Substituted sentence
 	 */
-	private static Sentence substitute(Sentence sent, Map<Variable, Constant> substitution)
+	private static Sentence substitute(Sentence sent, Map<Variable, Argument> substitution)
 	{
 		Sentence sentNew = new Sentence(sent, false);
 		
-		for(Entry<Variable, Constant> e : substitution.entrySet())
+		for(Entry<Variable, Argument> e : substitution.entrySet())
 		{
 			sentNew.substituteSingle(e.getKey(), e.getValue());
 		}
 		
 		return sentNew;
 	}
-
 
 	/**
 	 * <p>
@@ -421,16 +480,16 @@ public class homework
 				// if (DEBUG) System.out.printf("s2 = [%s], p2.%c = %s\n", s2, ('a'+j), p2);
 
 				if(p1.mightUnify(p2))
-				{
-					// TODO Unify variables
-					
+				{			
 					if(DEBUG)
 						System.out.printf("%s might unify with %s.\n", p1, p2);
 
-					Map<Variable, Constant> substitution = unify(p1, p2);
+					Map<Variable, Argument> substitution = unify(p1, p2);
 
 					Sentence s1_New = s1, s2_New = s2;
 
+					if(DEBUG) System.out.println();
+					
 					/*
 					 * Substitution might be empty even after a valid resolution
 					 * ~A(Lion) vs A(Lion), so check for nullness instead.
@@ -438,7 +497,10 @@ public class homework
 					if(substitution != null)
 					{
 						s1_New = substitute(s1, substitution);
+						// if(DEBUG) System.out.printf("Substitution: [%s] -> [%s]\n", s1, s1_New);
+						
 						s2_New = substitute(s2, substitution); 
+						// if(DEBUG) System.out.printf("Substitution: [%s] -> [%s]\n", s2, s2_New);
 						
 						Sentence sResolved = new Sentence(s1_New, s2_New);
 						
@@ -503,11 +565,16 @@ public class homework
 		emptyClause = false;
 
 		/*
-		 * TODO Restore the KB backup!
+		 * Restore the KB backup!
 		 * 
 		 * Maybe just delete all sentences with steps > 0? (1 is the old query,
 		 * > 1 the derived ones)
 		 */
+		
+		if(steps > 0)
+		{
+			resetKB();
+		}
 		steps = 1;
 
 		Sentence queryNegatedSentence = new Sentence(queryNegated);
@@ -558,23 +625,77 @@ public class homework
 				{
 					break;
 				}
-				else {
-
-					// TODO Create new resolvents using the newly generated sentence
-					// CHECK if this sentence/pair repeats
-
+				else 
+				{
+					/* Create new resolvents using the newly generated sentence.
+					 * Later checks if this sentence/pair repeats
+					 */
 					if(DEBUG)
 						System.out.println("Creating new resolvents using the newly generated sentence.");
 
 					for(Predicate p : sNew.predicates)
 					{
 						resolvents = kb.get(p.signedName(true));
-						if(DEBUG) System.out.printf("From [%s], %s can resolve with: %s\n", sNew, p, resolvents);
 
-						for(Sentence s : resolvents)
+						if(resolvents != null)
 						{
-							Entry<Sentence, Sentence> pair2 = new AbstractMap.SimpleEntry<>(sNew, s);
-							pairsToResolve.add(pair2);
+							if(DEBUG) System.out.printf("From [%s], predicate %s can resolve with: %s\n", sNew, p, resolvents);
+
+							// Make this pair only if not already made
+							for(Sentence s : resolvents)
+							{
+								boolean alreadyExists = false;
+								
+								// The pair can be in the pairsToResolve...
+								for(Entry<Sentence, Sentence> pairExisting : pairsToResolve)
+								{
+									Sentence ps1 = pairExisting.getKey();
+									Sentence ps2 = pairExisting.getValue();
+									
+									if((ps1.equals(sNew) && ps2.equals(s)) ||
+											(ps2.equals(sNew) && ps1.equals(s)))
+									{
+										alreadyExists = true;
+										
+										if(DEBUG)
+											System.out.printf(
+													"The pair [%s; %s] already exists in the pairs to resolve.\n", 
+													s, sNew);
+										
+										break;
+									}
+								}
+								
+								// or can be in pairsResolved.
+								if(!alreadyExists)
+								{
+									for(Entry<Sentence, Sentence> pairExisting : pairsResolved)
+									{
+										Sentence ps1 = pairExisting.getKey();
+										Sentence ps2 = pairExisting.getValue();
+										
+										if((ps1.equals(sNew) && ps2.equals(s)) ||
+												(ps2.equals(sNew) && ps1.equals(s)))
+										{
+											alreadyExists = true;
+											
+											if(DEBUG)
+												System.out.printf(
+														"The pair [%s; %s] already exists in the resolved pairs.\n", 
+														s, sNew);
+											
+											break;
+										}
+									}
+								}
+								
+								// If it's in neither, you're good to go!
+								if(!alreadyExists)
+								{
+									Entry<Sentence, Sentence> pair2 = new AbstractMap.SimpleEntry<>(sNew, s);
+									pairsToResolve.add(0, pair2);
+								}
+							}
 						}
 					}
 
@@ -583,12 +704,35 @@ public class homework
 			}
 
 			// System.out.println();
-
-
-			
 		}
 		
 		return emptyClause;
+	}
+
+
+	/**
+	 * 
+	 */
+	private static void resetKB() 
+	{
+		System.out.println("Restoring KB to pre-query state...");
+		for(Entry<String, List<Sentence>> e : kb.entrySet())
+		{
+			List<Sentence> l = e.getValue();
+
+			for(int i = 0; i < l.size(); i++)
+			{
+				Sentence s = l.get(i);
+				if(s.step > 0)
+				{
+					// if(DEBUG) System.out.printf("Removing [%s].\n", l.get(i));
+					
+					l.remove(i);
+					
+					i--;
+				}
+			}
+		}
 	}
 
 
@@ -616,6 +760,8 @@ public class homework
 	
 			in = new Scanner(new File(inputFileName));
 	
+			initialize();
+			
 			parseInput(in);
 			
 			PrintWriter writerOutput = null;
@@ -631,37 +777,17 @@ public class homework
 					
 					String resultString = (result)?"TRUE":"FALSE";
 					
-					System.out.printf("\nWriting to %s: %s\n", outputFileName, resultString);
+					System.out.printf("\nWriting to %s: %s\n\n", outputFileName, resultString);
 					writerOutput.println(resultString);
 				}
-				
-				/*Predicate p1a = new Predicate("mother(x, x, Alice)");
-				Predicate p2a = new Predicate("mother(Alice, y, y)");
-				
-				Map<Variable, Constant> mappy = unify(p1a, p2a);
-				
-				System.out.println("Substitution is: "+mappy);
-				
-				Sentence senti = new Sentence(p1a);
-				System.out.println(senti);
-				System.out.println(substitute(senti, mappy));*/
-				
+
 				// Before hardcode testing, make sure to disable emptyClause
-				emptyClause = false;
+				/*emptyClause = false;
 				System.out.println(resolve(
-						new Sentence("mother(x, x, Alice) | dad(x)"), 
-						new Sentence("~mother(Alice, y, Alice)")));
+						new Sentence("~F(Joe)"), 
+						new Sentence("F(x) | ~H(x)")));*/
 				
-				/*Sentence s5 = new Sentence("Mellow(a, b, Popat) | WTF(John, gorg, b) | Mellow(Acid, e, a, e, b)");
-				System.out.println(s5.toCommonString());
-				Sentence s6a = new Sentence("WTF(John, gorg, x) | Mellow(a, x, Popat) | Mellow(Acid, e, a, e, x)");
-				System.out.println(s6a.toCommonString());
-				Sentence s6b = new Sentence("WTF(John, gorg, b) | Mellow(a, b, Carnegie) | Mellow(Acid, e, a, e, b)");
-				System.out.println(s6b.toCommonString());
-				
-				System.out.printf("s5 == s6? %s,\ns5 == s6b? %s,\ns6a == s6b? %s\n", s5.equals(s6a), s5.equals(s6b), s6a.equals(s6b));
-				 */
-				
+
 			} catch (IOException e) {
 				e.printStackTrace();
 			} 
@@ -673,12 +799,12 @@ public class homework
 			in.close();
 		} 
 		catch (FileNotFoundException e) {
-			e.printStackTrace();
+			System.out.println("Input file '"+inputFileName+"' not found.\n");
 		}
 	
 		timeCurrent = System.nanoTime();
 	
-		System.out.println("\nCompleted in " +
+		System.out.println("Completed in " +
 				(TimeUnit.MILLISECONDS.convert(timeCurrent - timeStart, TimeUnit.NANOSECONDS) / 1000.0) + " seconds.");
 	}
 
@@ -814,7 +940,9 @@ class Predicate implements Comparable<Predicate>
 	 */
 	public Predicate(Predicate p)
 	{
-		this(p.toString());
+		this.name = p.name;
+		this.args = new ArrayList<>(p.args);
+		this.negative = p.negative;
 	}
 	
 	public Predicate(String natural, Map<String, Variable> vars)
@@ -950,43 +1078,7 @@ class Predicate implements Comparable<Predicate>
 		
 		return sb.toString();
 	}
-	
-	/*public String toCommonString()
-	{		
-		StringBuilder sbPredicate = new StringBuilder();
-		if(negative)
-			sbPredicate.append("~");
-		sbPredicate.append(name);
-		sbPredicate.append("(");
-		
-		Integer firstVarId = null;
-				
-		for(int i = 0; i < args.size(); i++)
-		{
-			Argument arg = args.get(i);
-			
-			// un-standardize variables
-			if(arg instanceof Variable)
-			{
-				Variable var = (Variable)arg;
-				if(firstVarId == null)
-				{
-					firstVarId = var.id;
-				}
-				sbPredicate.append(Variable.VAR_PREFIX + (var.id - firstVarId));
-			}
-			else { // Constant
-				sbPredicate.append(args.get(i));
-			}
-			
-			if(i < args.size()-1)
-				sbPredicate.append(", ");
-			else
-				sbPredicate.append(")");
-		}
-		
-		return sbPredicate.toString();
-	}*/
+
 	
 	/**
 	 * Returns the name of the predicate with the ~ sign in front (if negative)
@@ -1024,7 +1116,7 @@ class Predicate implements Comparable<Predicate>
  * A sentence is a disjunction (OR) of several predicates.
  * Sentences are identified by their sentence id.
  */
-class Sentence implements Comparable<Sentence>
+class Sentence // implements Comparable<Sentence>
 {
 	public final int id;
 	
@@ -1143,12 +1235,20 @@ class Sentence implements Comparable<Sentence>
 					{
 						// can remove these
 						
-						// System.out.printf("%s x %s CONTRADICTION LMAO.\n", p1, p2);
+						if(homework.DEBUG) System.out.printf("Resolved and removed; %s vs %s.\n", p1, p2);
 						
-						predicates.remove(i);
-						predicates.remove(j-1);
-						i--;
-						j--;
+						// Removing two elements from a list
+						if(i > j)
+						{
+							predicates.remove(i);
+							predicates.remove(j);
+							i--;
+						}
+						else {
+							predicates.remove(j);
+							predicates.remove(i);
+							j--;
+						}
 					}
 				}
 			}
@@ -1162,21 +1262,26 @@ class Sentence implements Comparable<Sentence>
 	 * Replaces all occurences of a variable in this sentence 
 	 * with the specified constant.
 	 * 
-	 * @param v Variable to find
-	 * @param c Constant to replace it with
+	 * @param var Variable to find
+	 * @param argSub Constant to replace it with
 	 */
-	public void substituteSingle(Variable v, Constant c)
+	public void substituteSingle(Variable var, Argument argSub)
 	{
 		for(Predicate p : this.predicates)
 		{
 			for(int i = 0; i < p.args.size(); i++)
 			{
-				Argument arg_i = p.args.get(i);
-		
-				if(arg_i instanceof Variable && ((Variable) arg_i).equals(v))
+				Argument argPred = p.args.get(i);
+				
+				// if(homework.DEBUG) System.out.printf("Trying to substitute %s {%s/%s}.\n", argPred, var, argSub);
+				
+				if(argPred instanceof Variable && ((Variable) argPred).equals(var))
 				{
 					// Substitute
-					p.args.set(i, c);
+					
+					// if(homework.DEBUG) System.out.printf("Substituting %s by %s.\n", argPred, argSub);
+					
+					p.args.set(i, argSub);
 				}
 			}
 		}
@@ -1324,13 +1429,13 @@ class Sentence implements Comparable<Sentence>
 	 * Currently, compares the sizes of the predicate clauses so that we can
 	 * prefer those that are smaller.
 	 */
-	@Override
+	/*@Override
 	public int compareTo(Sentence arg0) {
 
 		return Integer.compare(
 				this.predicates.size(), 
 				arg0.predicates.size());
-	}
+	}*/
 	
 	/**
 	 * Check if a sentence has at least one predicate that can unify with the

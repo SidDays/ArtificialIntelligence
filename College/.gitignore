@@ -1,6 +1,7 @@
 input*.txt
 desktop.ini
 output*.txt
+dump.txt
 
 /bin/
 
