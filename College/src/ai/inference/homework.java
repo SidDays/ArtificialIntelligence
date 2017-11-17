@@ -66,7 +66,26 @@ public class homework
 
 	// private static List<Sentence> kbSentences;
 
+
 	private static List<Predicate> queriesNegated = new ArrayList<>();
+
+	/** <p>UNIT PREFERENCE resolution strategy: AIMA 9.5.6
+	 * <p>
+	 * Currently, compares the sizes of the predicate clauses so that we
+	 * can prefer those that are smaller.
+	 */
+	private static final Comparator<Entry<Sentence, Sentence>> unitPreference = 
+			new Comparator<Entry<Sentence, Sentence>>() 
+	{
+		@Override
+		public int compare(Entry<Sentence, Sentence> o1, Entry<Sentence, Sentence> o2) {
+
+			int size1 = o1.getKey().predicates.size() + o1.getValue().predicates.size();
+			int size2 = o2.getKey().predicates.size() + o2.getValue().predicates.size();
+
+			return Integer.compare(size1, size2);
+		}
+	};
 
 	public static String inputFileName = "input.txt";
 	public static String outputFileName = "output.txt";
@@ -185,26 +204,26 @@ public class homework
 		}
 	}
 
-	
+
 	/*private static Map<Variable, Argument> unify(Map<Variable, Argument> substFormed, Argument a1, Argument a2)
 	{
-		
+
 		if(DEBUG) System.out.printf("Attempting to unify %s and %s.\n", a1, a2);
-		
+
 		Map<Variable, Argument> substitution = null;
-		
+
 		// if(substFormed == null)
-		
+
 		// TODO
 		substitution = new HashMap<>();
-		
+
 		boolean valid = true;
-		
+
 		if(a1 instanceof Constant && a2 instanceof Constant)
 		{
 			Constant c1 = (Constant) a1;
 			Constant c2 = (Constant) a2;
-			
+
 			if(!c1.equals(c2))
 			{
 				if(DEBUG)
@@ -214,20 +233,20 @@ public class homework
 				valid = false;
 			}
 		}
-		
+
 		else if(a1 instanceof Variable || a2 instanceof Variable)
 		{
 			// TODO Incomplete!
 		}
-		
+
 		if(!valid)
 		{
 			substitution = null;
 			if(DEBUG) System.out.println("Substitution is nulled, was invalid.");
 		}
-		
+
 		return substitution;
-		
+
 	}*/
 
 	private static Map<Variable, Argument> unify(Predicate p1, Predicate p2)
@@ -331,7 +350,7 @@ public class homework
 					if(DEBUG) System.out.format("Will attempt to unify variables %s and %s.\n", p1_v, p2_v);
 
 					List<Variable> thisOne = null;
-					
+
 					if(DEBUG) System.out.format("All groups sharing a substitution: %s.\n", commonSubstitutedVariables);
 
 					// If either of the variables already shares a substitution
@@ -364,7 +383,7 @@ public class homework
 			}
 
 			// Check if the variable common substitutions are satisfied
-			
+
 
 			for(List<Variable> listCommonVars : commonSubstitutedVariables)
 			{
@@ -406,52 +425,62 @@ public class homework
 				else
 				{
 					if(DEBUG) System.out.printf("The combined common subtitutions are %s\n", listCommonSubs);
-					
+
 					// Every non-null mapped value is (probably) a constant
-					Constant commonValue = (Constant) listCommonSubs.get(0);
+					Argument commonArg = listCommonSubs.get(0);
 
-					// Every other mapping MUST equal this
-					for(int csub_i = 1; csub_i < listCommonSubs.size(); csub_i++)
+					// If not... TODO what to do???
+					if(commonArg instanceof Constant) 
 					{
-						Constant otherValue = (Constant) listCommonSubs.get(csub_i);
 
-						if(!otherValue.equals(commonValue))
+						Constant commonValue = (Constant) commonArg;
+
+						// Every other mapping MUST equal this
+						for(int csub_i = 1; csub_i < listCommonSubs.size(); csub_i++)
 						{
-							valid = false;
+							Constant otherValue = (Constant) listCommonSubs.get(csub_i);
 
-							if(DEBUG) System.out.printf("Substitution invalid: Common variables clash, %s != %s.\n", otherValue, commonValue);
+							if(!otherValue.equals(commonValue))
+							{
+								valid = false;
 
-							break;
+								if(DEBUG) System.out.printf("Substitution invalid: Common variables clash, %s != %s.\n", otherValue, commonValue);
+
+								break;
+							}
+						}
+
+						// Continue only if no clash yet
+						if(valid) 
+						{
+							/* If it gets here, every substitution points to the same
+							 * value, and that value can be added as a substitution for
+							 * all the variables in the common-list
+							 */
+							for(Variable var : listCommonVars)
+							{
+								substitution.put(var, commonValue);
+
+								if(DEBUG) System.out.printf("Adding var-const substitution {%s/%s}\n", var, commonValue);
+							}
+
+							if(DEBUG)
+							{
+								System.out.printf("Thus, the variables ");
+								for(int i = 0; i < listCommonVars.size(); i++)
+								{
+									System.out.printf("%s", listCommonVars.get(i));
+									if(i < listCommonVars.size()-1)
+										System.out.printf(", ");
+								}
+								System.out.println(" can be unified.");
+							}
 						}
 					}
-
-					// Continue only if no clash yet
-					if(valid) 
+					else 
 					{
-
-						/*
-						 * If it gets here, every substitution points to the same
-						 * value, and that value can be added as a substitution for
-						 * all the variables in the common-list
-						 */
-						for(Variable var : listCommonVars)
-						{
-							substitution.put(var, commonValue);
-
-							if(DEBUG) System.out.printf("Adding var-const substitution {%s/%s}\n", var, commonValue);
-						}
-
-						if(DEBUG)
-						{
-							System.out.printf("Thus, the variables ");
-							for(int i = 0; i < listCommonVars.size(); i++)
-							{
-								System.out.printf("%s", listCommonVars.get(i));
-								if(i < listCommonVars.size()-1)
-									System.out.printf(", ");
-							}
-							System.out.println(" can be unified.");
-						}
+						System.err.println("Unknown error - the list shouldn't contain non-constants.");
+						valid = false;
 					}
 				}
 			}
@@ -660,19 +689,9 @@ public class homework
 
 		while(!pairsToResolve.isEmpty() && !emptyClause)
 		{
-			// Try sorting these pairs? idk
-			Collections.sort(pairsToResolve, new Comparator<Entry<Sentence, Sentence>>() 
-			{
-				@Override
-				public int compare(Entry<Sentence, Sentence> o1, Entry<Sentence, Sentence> o2) {
+			// Attempt to reduce resolution steps
+			Collections.sort(pairsToResolve, unitPreference);
 
-					int size1 = o1.getKey().predicates.size() + o1.getValue().predicates.size();
-					int size2 = o2.getKey().predicates.size() + o2.getValue().predicates.size();
-					
-					return Integer.compare(size1, size2);
-				}
-			});
-			
 			// Attempt to resolve one pair, then add its result to the KB
 
 			Entry<Sentence, Sentence> pair = pairsToResolve.remove(0);
@@ -716,7 +735,7 @@ public class homework
 							System.out.println("Creating new resolvents using the newly generated sentence.");
 
 						boolean atLeastOnePair = false;
-						
+
 						for(Predicate p : sNew.predicates)
 						{
 							resolvents = kb.get(p.signedName(true));
@@ -783,16 +802,16 @@ public class homework
 											System.out.printf(
 													"Added pair [%s; %s] to pairsToResolve!\n", 
 													s, sNew);
-										
+
 										atLeastOnePair = true;
 									}
 								}
 							}
-							
+
 							if(atLeastOnePair)
 								break;
 						}
-						
+
 						// Add this new sentence to the KB
 						putInKB(sNew);
 
@@ -1041,7 +1060,7 @@ class Predicate implements Comparable<Predicate>
 	{
 		this(p, false);
 	}
-	
+
 	/**
 	 * Copy constructor
 	 * @param p
@@ -1105,11 +1124,11 @@ class Predicate implements Comparable<Predicate>
 
 		}
 	}
-	
+
 	public boolean isAllVariable()
 	{
 		boolean allVars = true;
-		
+
 		for(int j = 0; j < args.size(); j++)
 		{
 			Argument arg1 = args.get(j);
@@ -1119,7 +1138,7 @@ class Predicate implements Comparable<Predicate>
 				break;
 			}
 		}
-		
+
 		return allVars;
 	}
 
@@ -1130,9 +1149,9 @@ class Predicate implements Comparable<Predicate>
 	public Predicate negate()
 	{
 		Predicate pNeg = null;
-		
+
 		pNeg = new Predicate(this, true);
-		
+
 		return pNeg;
 	}
 
@@ -1374,7 +1393,7 @@ class Sentence // implements Comparable<Sentence>
 
 		// Sort them - helps for checking equal sentences
 		Collections.sort(this.predicates);
-		
+
 		this.removeDuplicates();
 	}
 
@@ -1406,7 +1425,7 @@ class Sentence // implements Comparable<Sentence>
 			}
 		}
 	}
-	
+
 	/**
 	 * An attempt to optimize sentences to prevent looping.
 	 */
@@ -1414,14 +1433,14 @@ class Sentence // implements Comparable<Sentence>
 	public void removeDuplicates()
 	{
 		// TODO
-		
+
 		int count = 0;
-		
+
 		// Remove universal duplicates
 		/*for(int i = 0; i < predicates.size()-1; i++)
 		{
 			Predicate p1 = predicates.get(i);
-			
+
 			if(p1.isAllVariable())
 			{
 				for(int j = i+1; j < predicates.size(); j++)
@@ -1434,24 +1453,24 @@ class Sentence // implements Comparable<Sentence>
 						if(homework.DEBUG) System.out.printf("Removing universal duplicate predicate %s, same as %s.\n", p2, p1);
 
 						predicates.remove(j--);
-						
+
 						count++;
 					}
 				}
 			}
 		}*/
-		
+
 		// The predicate-list should already be in sorted order.
 		for(int i = 0; i < predicates.size()-1; i++)
 		{
 			Predicate p1 = predicates.get(i);
 			Predicate p2 = predicates.get(i+1);
-			
+
 			if(p1.matchesSignature(p2))
 			{
 				// Start checking them arguments - if all are variables, optimize
 				boolean allVars = true;
-				
+
 				for(int j = 0; j < p1.args.size(); j++)
 				{
 					Argument arg1 = p1.args.get(j);
@@ -1462,27 +1481,27 @@ class Sentence // implements Comparable<Sentence>
 						break;
 					}
 				}
-				
+
 				// This is so random, idk even if it'll work
 				if(allVars)
 				{
 					count++;
-					
+
 					if(homework.DEBUG) System.out.printf("Combining duplicate predicates %s and %s.\n", p1, p2);
-					
+
 					// Replace half of the arguments with the 'common' one
 					for(int k = p1.args.size()/2; k < p1.args.size(); k++)
 					{
 						p1.args.set(k, p2.args.get(k));
 					}
-					
+
 					// Delete the next predicate
 					predicates.remove(i+1);
 				}
-				
+
 			}
 		}
-		
+
 		if(homework.DEBUG && count > 0)
 			System.out.printf("%d duplicate(s) removed.\n", count);
 	}
@@ -1622,41 +1641,4 @@ class Sentence // implements Comparable<Sentence>
 
 		return sb.toString();
 	}
-
-	/**
-	 * TODO The resolution strategy: AIMA 9.5.6<br>
-	 * <br>
-	 * Currently, compares the sizes of the predicate clauses so that we can
-	 * prefer those that are smaller.
-	 */
-	
-	/*@Override
-	public int compareTo(Sentence arg0) {
-
-		return Integer.compare(
-				this.predicates.size(), 
-				arg0.predicates.size());
-	}*/
-
-	/**
-	 * Check if a sentence has at least one predicate that can unify with the
-	 * sentence passed as input.
-	 * 
-	 * @param other
-	 * @return
-	 */
-	/*public boolean canUnify(Sentence other)
-	{
-		for(Predicate p1 : this.predicates)
-		{
-			for(Predicate p2 : other.predicates)
-			{
-				if(p1.canUnify(p2))
-					return true;
-			}
-		}
-
-		return false;
-	}*/
-
 }
