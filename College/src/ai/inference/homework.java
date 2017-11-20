@@ -12,10 +12,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,6 +28,9 @@ public class homework
 
 	/** If true, prints information to the console. */
 	public static final boolean DEBUG = true;
+	
+	/** If true, prints a lot more information to the console. */
+	public static final boolean VERBOSE = true & DEBUG;
 
 	/** No. of queries */
 	private static int q;
@@ -64,15 +69,18 @@ public class homework
 	 */
 	private static Map<String, List<Sentence>> kb;
 
-	// private static List<Sentence> kbSentences;
-
-
+	/**
+	 * Stores the negated query predicates (which later become the first new
+	 * sentence to add to the KB, I guess)
+	 */
 	private static List<Predicate> queriesNegated = new ArrayList<>();
 
-	/** <p>UNIT PREFERENCE resolution strategy: AIMA 9.5.6
+	/**
 	 * <p>
-	 * Currently, compares the sizes of the predicate clauses so that we
-	 * can prefer those that are smaller.
+	 * TODO UNIT PREFERENCE resolution strategy: AIMA 9.5.6
+	 * <p>
+	 * Currently, compares the sizes of the predicate clauses so that we can
+	 * prefer those that are smaller.
 	 */
 	private static final Comparator<Entry<Sentence, Sentence>> unitPreference = 
 			new Comparator<Entry<Sentence, Sentence>>() 
@@ -205,7 +213,8 @@ public class homework
 	}
 
 
-	/*private static Map<Variable, Argument> unify(Map<Variable, Argument> substFormed, Argument a1, Argument a2)
+	/*
+	 * private static Map<Variable, Argument> unify(Map<Variable, Argument> substFormed, Argument a1, Argument a2)
 	{
 
 		if(DEBUG) System.out.printf("Attempting to unify %s and %s.\n", a1, a2);
@@ -271,13 +280,14 @@ public class homework
 			List<Argument> p1_args = new ArrayList<>(p1.args);
 			List<Argument> p2_args = new ArrayList<>(p2.args);
 
-			List<List<Variable>> commonSubstitutedVariables = new ArrayList<>();
+			Set<Set<Variable>> commonSubVariableSets = new HashSet<>();
 
 			for(int i = 0; i < p1_args.size() && valid; i++)
 			{
 				Argument p1_i = p1_args.get(i);
 				Argument p2_i = p2_args.get(i);
 
+				// If both are Constants
 				if(p1_i instanceof Constant && p2_i instanceof Constant)
 				{
 					Constant p1_c = (Constant) p1_i;
@@ -287,54 +297,45 @@ public class homework
 					{
 						if(DEBUG)
 						{
-							System.out.printf("Substitution invalid: %s != %s\n", p1_c, p2_c);
+							System.out.printf("Substitution invalid: Constants %s, %s can't be unified.\n", p1_c, p2_c);
 						}
 						valid = false;
 					}
 				}
 
-				if(p1_i instanceof Variable && p2_i instanceof Constant)
+				// If one is a Variable and the other is a constant
+				if((p1_i instanceof Variable && p2_i instanceof Constant) || 
+						(p2_i instanceof Variable && p1_i instanceof Constant))
 				{
-					Variable p1_v = (Variable) p1_i;
-					Constant p2_c = (Constant) p2_i;
+					Variable p_v = null;
+					Constant p_c = null;
+					
+					// Check WHICH one is Variable
+					if(p1_i instanceof Variable) {
+						p_v = (Variable) p1_i;
+						p_c = (Constant) p2_i;
+					}
+					else {
+						p_v = (Variable) p2_i;
+						p_c = (Constant) p1_i;
+					}
 
 					// [?] Add substitution to the substitution list
-					if(substitution.get(p1_v) != null && !substitution.get(p1_v).equals(p2_c))
+					if(substitution.get(p_v) != null && !substitution.get(p_v).equals(p_c))
 					{
 						if(DEBUG)
 						{
-							System.out.printf("Substitution invalid: %s already unified with different constant\n",
-									p1_v);
+							System.out.printf("Substitution invalid: %s already unified with different constant.\n",
+									p_v);
 						}
 						valid = false;
 					} 
 					else {
-						substitution.put(p1_v, p2_c);
+						substitution.put(p_v, p_c);
 					}
 				}
 
-				// COMBINE THESE
-				else if (p2_i instanceof Variable && p1_i instanceof Constant)
-				{
-					Variable p2_v = (Variable) p2_i;
-					Constant p1_c = (Constant) p1_i;
-
-					// [?] Add substitution to the substitution list
-					if(substitution.get(p2_v) != null && !substitution.get(p2_v).equals(p1_c))
-					{
-						if(DEBUG)
-						{
-							System.out.printf("Substitution invalid: %s already unified with different constant\n",
-									p2_v);
-						}
-						valid = false;
-					} 
-					else {
-						substitution.put(p2_v, p1_c);
-					}
-
-				}
-
+				// If both are variables
 				else if (p1_i instanceof Variable && p2_i instanceof Variable)
 				{
 					/*
@@ -347,87 +348,109 @@ public class homework
 					Variable p1_v = (Variable)(p1_i);
 					Variable p2_v = (Variable)(p2_i);
 
-					if(DEBUG) System.out.format("Will attempt to unify variables %s and %s.\n", p1_v, p2_v);
+					if(VERBOSE) System.out.printf("Will attempt to unify variables %s and %s.\n", p1_v, p2_v);
 
-					List<Variable> thisOne = null;
+					Set<Variable> currentSubSet = null;
 
-					if(DEBUG) System.out.format("All groups sharing a substitution: %s.\n", commonSubstitutedVariables);
+					if(VERBOSE) System.out.printf("All groups so far sharing a substitution: %s.\n", commonSubVariableSets);
 
-					// If either of the variables already shares a substitution
-					for(List<Variable> l : commonSubstitutedVariables)
+					// Check if any of the common substitution sets already contain either variable
+					for(Set<Variable> possibleSubSet : commonSubVariableSets)
 					{
-						if(l.contains(p1_v) || l.contains(p2_v))
+						if(possibleSubSet.contains(p1_v) || possibleSubSet.contains(p2_v))
 						{
-							thisOne = l;
+							currentSubSet = possibleSubSet;
+							
+							if(VERBOSE) System.out.printf("Can reuse the substitution %s.\n", currentSubSet);
+							
+							break;
 						}
 					}
-
-					// If not, make a new set of common substitutions
-					if(thisOne == null)
-						thisOne = new ArrayList<>();
-
-					// Either way, add these two variables to it.
-					thisOne.add(p1_v);
-					thisOne.add(p2_v);
-
-					// Now add this list to the common ones
-					commonSubstitutedVariables.add(thisOne);
-
+					
+					if(currentSubSet != null) // If it exists, reuse that subset
+					{
+						// Either way, add these two variables to it.
+						currentSubSet.add(p1_v);
+						currentSubSet.add(p2_v);
+					}
+					else // If not, make a new set of common substitutions
+					{ 
+						currentSubSet = new HashSet<>();
+						
+						// Add these two variables to it.
+						currentSubSet.add(p1_v);
+						currentSubSet.add(p2_v);
+						
+						// Now add this list to the common ones
+						commonSubVariableSets.add(currentSubSet);
+					}
 				}
 
-				if(DEBUG)
-				{
-					System.out.printf("Substitution so far: %s\n", substitution);
-				}
-
+				if(VERBOSE) System.out.printf("Substitution after arg%d, (%s and %s) is %s.\n", (i), p1_i, p2_i, substitution);
+			
 			}
+			
+			// if(VERBOSE) System.out.println("Finished processing arguments.");
 
-			// Check if the variable common substitutions are satisfied
-
-
-			for(List<Variable> listCommonVars : commonSubstitutedVariables)
+			// Check if all the common substitutions are satisfied
+			for(Set<Variable> currentSubSet : commonSubVariableSets)
 			{
 				// Resue the same list of common substitutions
-				List<Argument> listCommonSubs = new ArrayList<>();
+				Set<Argument> commonSubs = new HashSet<>();
 
-				if(DEBUG) System.out.printf("Finished processing arguments. Checking these variables for mappings: %s\n", listCommonVars);
-
-				for(Variable var : listCommonVars)
+				if(VERBOSE) System.out.printf("Checking the combined mappings of the Variable-Set %s.\n", currentSubSet);
+				for(Variable var : currentSubSet)
 				{
 					Argument argSub = substitution.get(var);
 					if(argSub != null)
-						listCommonSubs.add(argSub);
+						commonSubs.add(argSub);
 				}
 
-				// If none of these variables have a mapping, assign a temp variable to map them to
-				if(listCommonSubs.isEmpty())
+				// If none of these variables have a mapping, assign a temp variable to map them to it
+				if(commonSubs.isEmpty())
 				{
-					Variable varTemp = new Variable("temp"+steps);
-					for(Variable var : listCommonVars)
+					Variable varSub = new Variable(Variable.VAR_TEMP_PREFIX + steps);
+					
+					for(Variable var : currentSubSet)
 					{
-						substitution.put(var, varTemp);
+						substitution.put(var, varSub);
 
-						if(DEBUG) System.out.printf("Adding var-var substitution {%s/%s}\n", var, varTemp);
+						// if(VERBOSE) System.out.printf("Adding var-var substitution {%s/%s}\n", var, varSub);
 					}
 
-					if(DEBUG)
-					{
-						System.out.printf("Thus, the variables ");
-						for(int i = 0; i < listCommonVars.size(); i++)
-						{
-							System.out.printf("%s", listCommonVars.get(i));
-							if(i < listCommonVars.size()-1)
-								System.out.printf(", ");
-						}
-						System.out.println(" can be unified.");
-					}
+					if (VERBOSE)
+						System.out.printf("Thus, the variables %s were unified by substituting them to a new variable %s.\n",
+								currentSubSet, varSub);
+
 				}
+				
+				// If all of them combined have only one mapping, assign all variables to it
+				else if(commonSubs.size() == 1)
+				{
+					Argument argSub = commonSubs.iterator().next();
+
+					for(Variable var : currentSubSet)
+					{
+						substitution.put(var, argSub);
+
+						// if(VERBOSE) System.out.printf("Adding var-var substitution {%s/%s}\n", var, argSub);
+					}
+
+					if (VERBOSE)
+						System.out.printf("Thus, the variables %s were unified to the common substitution %s.\n",
+								currentSubSet, argSub);
+				}
+				
+				// Since a Set is used, the variables supposed to have a common substitution already don't have a common substitution
 				else
 				{
-					if(DEBUG) System.out.printf("The combined common subtitutions are %s\n", listCommonSubs);
-
+					if(VERBOSE) System.out.printf("The combined common subtitutions, %s, are non-identical and clash.\n"
+							+ "The variables %s cannot be unified.\n", commonSubs, currentSubSet);
+					valid = false;
+					
+					/*
 					// Every non-null mapped value is (probably) a constant
-					Argument commonArg = listCommonSubs.get(0);
+					Argument commonArg = commonSubs.get(0);
 
 					// If not... TODO what to do???
 					if(commonArg instanceof Constant) 
@@ -436,15 +459,15 @@ public class homework
 						Constant commonValue = (Constant) commonArg;
 
 						// Every other mapping MUST equal this
-						for(int csub_i = 1; csub_i < listCommonSubs.size(); csub_i++)
+						for(int csub_i = 1; csub_i < commonSubs.size(); csub_i++)
 						{
-							Constant otherValue = (Constant) listCommonSubs.get(csub_i);
+							Constant otherValue = (Constant) commonSubs.get(csub_i);
 
 							if(!otherValue.equals(commonValue))
 							{
 								valid = false;
 
-								if(DEBUG) System.out.printf("Substitution invalid: Common variables clash, %s != %s.\n", otherValue, commonValue);
+								if(VERBOSE) System.out.printf("Substitution invalid: Common variables clash, %s != %s.\n", otherValue, commonValue);
 
 								break;
 							}
@@ -453,24 +476,24 @@ public class homework
 						// Continue only if no clash yet
 						if(valid) 
 						{
-							/* If it gets here, every substitution points to the same
+							 If it gets here, every substitution points to the same
 							 * value, and that value can be added as a substitution for
 							 * all the variables in the common-list
-							 */
-							for(Variable var : listCommonVars)
+							 
+							for(Variable var : currentSubSet)
 							{
 								substitution.put(var, commonValue);
 
-								if(DEBUG) System.out.printf("Adding var-const substitution {%s/%s}\n", var, commonValue);
+								if(VERBOSE) System.out.printf("Adding var-const substitution {%s/%s}\n", var, commonValue);
 							}
 
-							if(DEBUG)
+							if(VERBOSE)
 							{
 								System.out.printf("Thus, the variables ");
-								for(int i = 0; i < listCommonVars.size(); i++)
+								for(int i = 0; i < currentSubSet.size(); i++)
 								{
-									System.out.printf("%s", listCommonVars.get(i));
-									if(i < listCommonVars.size()-1)
+									System.out.printf("%s", currentSubSet.get(i));
+									if(i < currentSubSet.size()-1)
 										System.out.printf(", ");
 								}
 								System.out.println(" can be unified.");
@@ -481,7 +504,7 @@ public class homework
 					{
 						System.err.println("Unknown error - the list shouldn't contain non-constants.");
 						valid = false;
-					}
+					}*/
 				}
 			}
 
@@ -628,6 +651,8 @@ public class homework
 
 	/**
 	 * <p>
+	 * Runs FOL-Resolution for the query with given query number.
+	 * <p>
 	 * TODO The way the function is currently designed, there MUST be a path to
 	 * the bottom using the query itself (without requiring additional things
 	 * like AND introduction.)
@@ -635,12 +660,12 @@ public class homework
 	 * Currently does not check for loops by checking if the resolution pairs
 	 * already exist.
 	 * 
-	 * @param q_i
+	 * @param q_i The query to try to refute.
 	 */
 	private static boolean resolveQueryNegated(int q_i) 
 	{
 		Predicate queryNegated = queriesNegated.get(q_i);
-		if(DEBUG) System.out.printf("Query %d: %s\n===== == ===============\n", q_i+1, queryNegated);
+		if(DEBUG) System.out.printf("\nQuery %d: %s\n===== == ===============\n", q_i+1, queryNegated);
 
 		emptyClause = false;
 
@@ -664,24 +689,24 @@ public class homework
 		List<Entry<Sentence, Sentence>> pairsResolved = new ArrayList<>();
 
 		// Get all the sentences with new sentence query's negation
-		List<Sentence> resolvents = kb.get(queryNegated.signedName(true));
+		List<Sentence> resolvers = kb.get(queryNegated.signedName(true));
 
 
-		// Initial resolvent database, NullPointerException if no resolvents
-		if(resolvents == null)
+		// Initial resolver database, NullPointerException if no resolvers
+		if(resolvers == null)
 		{
-			System.out.println("There's nothing to unify the query with at all.");
+			if(DEBUG) System.out.println("There's nothing to unify the query with at all.");
 			return false;
 		}
 		else 
 		{
-			// resolvents.sort(null);
+			// resolvers.sort(null);
 
-			if(DEBUG) System.out.println("Initial sentences to consider: "+resolvents);
+			if(DEBUG) System.out.println("Initial sentences to consider: "+resolvers);
 		}
 
 		// I got something to resolve with!
-		for(Sentence s : resolvents)
+		for(Sentence s : resolvers)
 		{
 			Entry<Sentence, Sentence> pairWithQuery = new AbstractMap.SimpleEntry<>(queryNegatedSentence, s);
 			pairsToResolve.add(pairWithQuery);
@@ -723,29 +748,29 @@ public class homework
 
 					if(inKB)
 					{
-						System.out.printf("Sentence [%s] already in KB!\n", sNew);
+						if(DEBUG) System.out.printf("Sentence [%s] already in KB!\n", sNew);
 					}
 
 					else 
 					{
-						/* Create new resolvents using the newly generated sentence.
+						/* Create new resolvers using the newly generated sentence.
 						 * Later checks if this sentence/pair repeats
 						 */
 						if(DEBUG)
-							System.out.println("Creating new resolvents using the newly generated sentence.");
+							System.out.println("Creating new resolvers using the newly generated sentence.");
 
 						boolean atLeastOnePair = false;
 
 						for(Predicate p : sNew.predicates)
 						{
-							resolvents = kb.get(p.signedName(true));
+							resolvers = kb.get(p.signedName(true));
 
-							if(resolvents != null)
+							if(resolvers != null)
 							{
-								if(DEBUG) System.out.printf("From [%s], predicate %s can resolve with: %s\n", sNew, p, resolvents);
+								if(DEBUG) System.out.printf("From [%s], predicate %s can resolve with: %s\n", sNew, p, resolvers);
 
 								// Make this pair only if not already made
-								for(Sentence s : resolvents)
+								for(Sentence s : resolvers)
 								{
 									boolean alreadyExists = false;
 
@@ -895,15 +920,15 @@ public class homework
 
 					String resultString = (result)?"TRUE":"FALSE";
 
-					System.out.printf("\nWriting to %s: %s\n\n", outputFileName, resultString);
+					System.out.printf("\n%s\n", resultString);
 					writerOutput.println(resultString);
 				}
 
 				// Before hardcode testing, make sure to disable emptyClause
 				/*emptyClause = false;
 				System.out.println(resolve(
-						new Sentence("~F(Joe)"), 
-						new Sentence("F(x) | ~H(x)")));*/
+						new Sentence("FA(x1,y2,y2)"), 
+						new Sentence("~FA(y3,y3,x4)")));*/
 
 
 			} catch (IOException e) {
@@ -982,6 +1007,7 @@ class Constant implements Argument
 class Variable implements Argument, Comparable<Variable>
 {
 	public static final String VAR_PREFIX = "x";
+	public static final String VAR_TEMP_PREFIX = "t";
 
 	public final int id;
 	public final String commonName;

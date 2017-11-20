@@ -25,7 +25,7 @@ public class HomeworkRunner {
 		    			file.getName().toLowerCase().startsWith("input"))
 		    	{
 		    		// Run the homework program
-		    		System.out.println("Running the game for input file "+file.getName()+".");
+		    		System.out.println("Running for input file "+file.getName()+".");
 		    		homework.main(new String[] { file.getName() });
 		    	}
 		    	System.out.println();
