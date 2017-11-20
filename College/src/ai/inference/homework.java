@@ -1,6 +1,3 @@
-/**
- * 
- */
 package ai.inference;
 
 import java.io.File;
@@ -13,6 +10,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -20,17 +18,17 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-/**
- *
- */
 public class homework 
 {
 
 	/** If true, prints information to the console. */
 	public static final boolean DEBUG = true;
-	
+
 	/** If true, prints a lot more information to the console. */
 	public static final boolean VERBOSE = true & DEBUG;
+	
+	/** Should optimization strategies, like removal of duplicates be used? */
+	public static final boolean OPTIMIZE = true;
 
 	/** No. of queries */
 	private static int q;
@@ -77,7 +75,7 @@ public class homework
 
 	/**
 	 * <p>
-	 * TODO UNIT PREFERENCE resolution strategy: AIMA 9.5.6
+	 * UNIT PREFERENCE resolution strategy: AIMA 9.5.6
 	 * <p>
 	 * Currently, compares the sizes of the predicate clauses so that we can
 	 * prefer those that are smaller.
@@ -151,7 +149,8 @@ public class homework
 			if(DEBUG)
 				System.out.printf("Current sentence: %s\n", sentence);
 
-			// TODO [?] Handle sentences with two contradicting predicates
+			// Handle sentences with two contradicting predicates -
+			// Not required, because KB is guaranteed to be consistent.
 
 			putInKB(sentence);
 
@@ -212,55 +211,9 @@ public class homework
 		}
 	}
 
-
-	/*
-	 * private static Map<Variable, Argument> unify(Map<Variable, Argument> substFormed, Argument a1, Argument a2)
-	{
-
-		if(DEBUG) System.out.printf("Attempting to unify %s and %s.\n", a1, a2);
-
-		Map<Variable, Argument> substitution = null;
-
-		// if(substFormed == null)
-
-		// TODO
-		substitution = new HashMap<>();
-
-		boolean valid = true;
-
-		if(a1 instanceof Constant && a2 instanceof Constant)
-		{
-			Constant c1 = (Constant) a1;
-			Constant c2 = (Constant) a2;
-
-			if(!c1.equals(c2))
-			{
-				if(DEBUG)
-				{
-					System.out.printf("Substitution invalid: %s != %s\n", c1, c2);
-				}
-				valid = false;
-			}
-		}
-
-		else if(a1 instanceof Variable || a2 instanceof Variable)
-		{
-			// TODO Incomplete!
-		}
-
-		if(!valid)
-		{
-			substitution = null;
-			if(DEBUG) System.out.println("Substitution is nulled, was invalid.");
-		}
-
-		return substitution;
-
-	}*/
-
 	private static Map<Variable, Argument> unify(Predicate p1, Predicate p2)
 	{
-		if(DEBUG)
+		if(VERBOSE)
 		{
 			System.out.printf("Attempting to unify %s and %s.\n", p1, p2);
 		}
@@ -309,7 +262,7 @@ public class homework
 				{
 					Variable p_v = null;
 					Constant p_c = null;
-					
+
 					// Check WHICH one is Variable
 					if(p1_i instanceof Variable) {
 						p_v = (Variable) p1_i;
@@ -360,13 +313,13 @@ public class homework
 						if(possibleSubSet.contains(p1_v) || possibleSubSet.contains(p2_v))
 						{
 							currentSubSet = possibleSubSet;
-							
+
 							if(VERBOSE) System.out.printf("Can reuse the substitution %s.\n", currentSubSet);
-							
+
 							break;
 						}
 					}
-					
+
 					if(currentSubSet != null) // If it exists, reuse that subset
 					{
 						// Either way, add these two variables to it.
@@ -376,20 +329,20 @@ public class homework
 					else // If not, make a new set of common substitutions
 					{ 
 						currentSubSet = new HashSet<>();
-						
+
 						// Add these two variables to it.
 						currentSubSet.add(p1_v);
 						currentSubSet.add(p2_v);
-						
+
 						// Now add this list to the common ones
 						commonSubVariableSets.add(currentSubSet);
 					}
 				}
 
 				if(VERBOSE) System.out.printf("Substitution after arg%d, (%s and %s) is %s.\n", (i), p1_i, p2_i, substitution);
-			
+
 			}
-			
+
 			// if(VERBOSE) System.out.println("Finished processing arguments.");
 
 			// Check if all the common substitutions are satisfied
@@ -410,7 +363,7 @@ public class homework
 				if(commonSubs.isEmpty())
 				{
 					Variable varSub = new Variable(Variable.VAR_TEMP_PREFIX + steps);
-					
+
 					for(Variable var : currentSubSet)
 					{
 						substitution.put(var, varSub);
@@ -423,7 +376,7 @@ public class homework
 								currentSubSet, varSub);
 
 				}
-				
+
 				// If all of them combined have only one mapping, assign all variables to it
 				else if(commonSubs.size() == 1)
 				{
@@ -440,71 +393,13 @@ public class homework
 						System.out.printf("Thus, the variables %s were unified to the common substitution %s.\n",
 								currentSubSet, argSub);
 				}
-				
+
 				// Since a Set is used, the variables supposed to have a common substitution already don't have a common substitution
 				else
 				{
 					if(VERBOSE) System.out.printf("The combined common subtitutions, %s, are non-identical and clash.\n"
 							+ "The variables %s cannot be unified.\n", commonSubs, currentSubSet);
 					valid = false;
-					
-					/*
-					// Every non-null mapped value is (probably) a constant
-					Argument commonArg = commonSubs.get(0);
-
-					// If not... TODO what to do???
-					if(commonArg instanceof Constant) 
-					{
-
-						Constant commonValue = (Constant) commonArg;
-
-						// Every other mapping MUST equal this
-						for(int csub_i = 1; csub_i < commonSubs.size(); csub_i++)
-						{
-							Constant otherValue = (Constant) commonSubs.get(csub_i);
-
-							if(!otherValue.equals(commonValue))
-							{
-								valid = false;
-
-								if(VERBOSE) System.out.printf("Substitution invalid: Common variables clash, %s != %s.\n", otherValue, commonValue);
-
-								break;
-							}
-						}
-
-						// Continue only if no clash yet
-						if(valid) 
-						{
-							 If it gets here, every substitution points to the same
-							 * value, and that value can be added as a substitution for
-							 * all the variables in the common-list
-							 
-							for(Variable var : currentSubSet)
-							{
-								substitution.put(var, commonValue);
-
-								if(VERBOSE) System.out.printf("Adding var-const substitution {%s/%s}\n", var, commonValue);
-							}
-
-							if(VERBOSE)
-							{
-								System.out.printf("Thus, the variables ");
-								for(int i = 0; i < currentSubSet.size(); i++)
-								{
-									System.out.printf("%s", currentSubSet.get(i));
-									if(i < currentSubSet.size()-1)
-										System.out.printf(", ");
-								}
-								System.out.println(" can be unified.");
-							}
-						}
-					}
-					else 
-					{
-						System.err.println("Unknown error - the list shouldn't contain non-constants.");
-						valid = false;
-					}*/
 				}
 			}
 
@@ -547,24 +442,12 @@ public class homework
 	/**
 	 * <p>
 	 * Tries to resolve two sentences, s1 and s2. Compares every predicate in
-	 * both of those sentences, and tries to unify them.
-	 * <p>
-	 * A valid result will be <b>put into the KB.</b>
+	 * both of those sentences, and tries to unify them in all possible ways.
 	 * 
-	 * @param s1
-	 *            First sentence
-	 * @param s2
-	 *            Second sentence
-	 * @return
-	 *         <p>
-	 * 		<code>substitution</code> Map if the sentences can be unified,
-	 *         <code>null</code> if the sentences cannot.
-	 *         <p>
-	 * 		An empty <code>substitution</code> Map indicates unification is
-	 *         possible without substitution (i.e. variable-variable
-	 *         unification).
+	 * @return a Set of all possible unifications, null if unable to unify.
+	 * 
 	 */
-	private static Sentence resolve(Sentence s1, Sentence s2)
+	private static Set<Sentence> resolve(Sentence s1, Sentence s2)
 	{
 		if (DEBUG) 
 		{
@@ -572,6 +455,10 @@ public class homework
 					+ "-----------------------------------------------------------------------\n", steps, s1, s2);
 		}
 
+		// Store the combined results of all possible ways these two sentences can be resolved
+		Set<Sentence> resolutionResult = null;
+
+		// Check all possible ways these two sentences can be resolved
 		for(int i = 0; i < s1.predicates.size() && !emptyClause; i++)
 		{
 			Predicate p1 = s1.predicates.get(i);
@@ -585,7 +472,7 @@ public class homework
 				if(p1.mightUnify(p2))
 				{			
 					if(DEBUG)
-						System.out.printf("%s might unify with %s.\n", p1, p2);
+						System.out.printf("-> %d/%d: %s might unify with %s.\n",i, j, p1, p2);
 
 					Map<Variable, Argument> substitution = unify(p1, p2);
 
@@ -599,6 +486,9 @@ public class homework
 					 */
 					if(substitution != null)
 					{
+						if(DEBUG)
+							System.out.printf("Substitution, finally = %s\n", substitution);
+						
 						s1_New = substitute(s1, substitution);
 						// if(DEBUG) System.out.printf("Substitution: [%s] -> [%s]\n", s1, s1_New);
 
@@ -619,33 +509,43 @@ public class homework
 						{
 							// NOT JUST YET: putInKB(sResolved);
 
-							if(DEBUG) { 
+							if(DEBUG) 
+							{ 
 								System.out.printf(
 										"Valid sentence formed after resolving \n\t   [%s] \n\tvs [%s] \n\t = [%s]\n\n",
 										s1, s2, sResolved);
 							}
+							
+							if(OPTIMIZE) sResolved.refactor();
 						}
 
-						return sResolved;
+						// The set remains null if it is empty
+						if(resolutionResult == null)
+						{
+							resolutionResult = new LinkedHashSet<>();
+						}
+						resolutionResult.add(sResolved);
+						// return sResolved;
 					}
 
-					else {
+					else // Don't add anything to the set
+					{
 
 						if(DEBUG)
 							System.out.printf("Can't resolve [%s] vs [%s]; no valid substitution.\n", s1, s2);
-						return null;
+						// return null;
 
 					}
 				}
 			}
 		}
 
-		/* If both for loops are exited, no predicates might unify */
+		// If both for loops are exited, no predicates might unify
+		if(resolutionResult == null) {
+			if(DEBUG) System.out.printf("Can't resolve [%s] vs [%s]; Possibly incompatible predicates.\n", s1, s2);
+		}
 
-		if(DEBUG)
-			System.out.printf("Can't resolve [%s] vs [%s]; Possibly incompatible predicates.\n", s1, s2);
-
-		return null;
+		return resolutionResult;
 	}
 
 
@@ -653,7 +553,7 @@ public class homework
 	 * <p>
 	 * Runs FOL-Resolution for the query with given query number.
 	 * <p>
-	 * TODO The way the function is currently designed, there MUST be a path to
+	 * The way the function is currently designed, there MUST be a path to
 	 * the bottom using the query itself (without requiring additional things
 	 * like AND introduction.)
 	 * <p>
@@ -665,22 +565,20 @@ public class homework
 	private static boolean resolveQueryNegated(int q_i) 
 	{
 		Predicate queryNegated = queriesNegated.get(q_i);
-		if(DEBUG) System.out.printf("\nQuery %d: %s\n===== == ===============\n", q_i+1, queryNegated);
+		if(DEBUG) 
+			System.out.printf("\nQuery %d: %s\n===== == ======================\n",
+					q_i+1, queryNegated);
 
 		emptyClause = false;
 
 		/*
-		 * Restore the KB backup!
-		 * 
-		 * Maybe just delete all sentences with steps > 0? (1 is the old query,
-		 * > 1 the derived ones)
+		 * Restore the KB backup; delete all sentences with steps > 0 (1 is the
+		 * old query, > 1 the derived ones)
 		 */
-
-		if(steps > 0)
+		if(steps > 0) // Only if you need to reset it - just optimizing ;)
 		{
 			resetKB();
 		}
-		steps = 1;
 
 		Sentence queryNegatedSentence = new Sentence(queryNegated);
 		putInKB(queryNegatedSentence);
@@ -702,7 +600,7 @@ public class homework
 		{
 			// resolvers.sort(null);
 
-			if(DEBUG) System.out.println("Initial sentences to consider: "+resolvers);
+			if(DEBUG) System.out.printf("%s can resolve with: %s\n", queryNegated, resolvers);
 		}
 
 		// I got something to resolve with!
@@ -718,7 +616,6 @@ public class homework
 			Collections.sort(pairsToResolve, unitPreference);
 
 			// Attempt to resolve one pair, then add its result to the KB
-
 			Entry<Sentence, Sentence> pair = pairsToResolve.remove(0);
 			Sentence s1 = pair.getKey();
 			Sentence s2 = pair.getValue();
@@ -726,78 +623,61 @@ public class homework
 			// Only increment counter if the new step worked
 			steps++;
 
-			// Resolve automatically adds new valid sentences to the KB
-			Sentence sNew = resolve(s1, s2);
+			// The set of all possible ways a pair of Sentences can resolve
+			Set<Sentence> sNewSet = resolve(s1, s2);
+			
+			if(DEBUG) System.out.printf("Set of all resolved results: %s\n", sNewSet);
 
 			pairsResolved.add(pair);
 
 			// If it was possible to actually resolve them
-			if(sNew != null)
+			if(sNewSet != null)
 			{
 				if(emptyClause) 
 				{
 					break;
 				}
-				else 
+				else // Process every new sentence
 				{
-
-					// Check if sentence already in KB - it should be present in the list for even its first predicate
-					Predicate p0 = sNew.predicates.get(0);
-
-					boolean inKB = kb.get(p0.signedName(false)).contains(sNew);
-
-					if(inKB)
+					for(Sentence sNew : sNewSet) 
 					{
-						if(DEBUG) System.out.printf("Sentence [%s] already in KB!\n", sNew);
-					}
 
-					else 
-					{
-						/* Create new resolvers using the newly generated sentence.
-						 * Later checks if this sentence/pair repeats
-						 */
-						if(DEBUG)
-							System.out.println("Creating new resolvers using the newly generated sentence.");
+						// Check if sentence already in KB - it should be present in the list for even its first predicate
+						Predicate p0 = sNew.predicates.get(0);
 
-						boolean atLeastOnePair = false;
+						boolean inKB = kb.get(p0.signedName(false)).contains(sNew);
 
-						for(Predicate p : sNew.predicates)
+						if(inKB)
 						{
-							resolvers = kb.get(p.signedName(true));
+							if(DEBUG) System.out.printf("Sentence [%s] already in KB!\n", sNew);
+						}
 
-							if(resolvers != null)
+						else 
+						{
+							/* Create new resolvers using the newly generated sentence.
+							 * Later checks if this sentence/pair repeats
+							 */
+							if(DEBUG)
+								System.out.printf("\nCreating new pairs for [%s].\n", sNew);
+
+							// TODO Does checking this condition cause problems?
+							boolean atLeastOnePair = false;
+
+							for(Predicate p : sNew.predicates)
 							{
-								if(DEBUG) System.out.printf("From [%s], predicate %s can resolve with: %s\n", sNew, p, resolvers);
+								resolvers = kb.get(p.signedName(true));
 
-								// Make this pair only if not already made
-								for(Sentence s : resolvers)
+								if(resolvers != null)
 								{
-									boolean alreadyExists = false;
+									if(VERBOSE) System.out.printf("From [%s], predicate %s can resolve with: %s\n", sNew, p, resolvers);
 
-									// The pair can be in the pairsToResolve...
-									for(Entry<Sentence, Sentence> pairExisting : pairsToResolve)
+									// Make this pair only if not already made
+									for(Sentence s : resolvers)
 									{
-										Sentence ps1 = pairExisting.getKey();
-										Sentence ps2 = pairExisting.getValue();
+										boolean alreadyExists = false;
 
-										if((ps1.equals(sNew) && ps2.equals(s)) ||
-												(ps2.equals(sNew) && ps1.equals(s)))
-										{
-											alreadyExists = true;
-
-											if(DEBUG)
-												System.out.printf(
-														"The pair [%s; %s] already exists in the pairs to resolve.\n", 
-														s, sNew);
-
-											break;
-										}
-									}
-
-									// or can be in pairsResolved.
-									if(!alreadyExists)
-									{
-										for(Entry<Sentence, Sentence> pairExisting : pairsResolved)
+										// The pair can be in the pairsToResolve...
+										for(Entry<Sentence, Sentence> pairExisting : pairsToResolve)
 										{
 											Sentence ps1 = pairExisting.getKey();
 											Sentence ps2 = pairExisting.getValue();
@@ -809,51 +689,80 @@ public class homework
 
 												if(DEBUG)
 													System.out.printf(
-															"The pair [%s; %s] already exists in the resolved pairs.\n", 
+															"The pair [%s; %s] already exists in the pairs to resolve.\n", 
 															s, sNew);
 
 												break;
 											}
 										}
-									}
 
-									// If it's in neither, you're good to go!
-									if(!alreadyExists)
-									{
-										Entry<Sentence, Sentence> pair2 = new AbstractMap.SimpleEntry<>(sNew, s);
-										pairsToResolve.add(0, pair2);
+										// or can be in pairsResolved.
+										if(!alreadyExists)
+										{
+											for(Entry<Sentence, Sentence> pairExisting : pairsResolved)
+											{
+												Sentence ps1 = pairExisting.getKey();
+												Sentence ps2 = pairExisting.getValue();
 
-										if(DEBUG)
-											System.out.printf(
-													"Added pair [%s; %s] to pairsToResolve!\n", 
-													s, sNew);
+												if((ps1.equals(sNew) && ps2.equals(s)) ||
+														(ps2.equals(sNew) && ps1.equals(s)))
+												{
+													alreadyExists = true;
 
-										atLeastOnePair = true;
+													if(DEBUG)
+														System.out.printf(
+																"The pair [%s; %s] already exists in the resolved pairs.\n", 
+																s, sNew);
+
+													break;
+												}
+											}
+										}
+
+										// If it's in neither, you're good to go!
+										if(!alreadyExists)
+										{
+											Entry<Sentence, Sentence> pair2 = new AbstractMap.SimpleEntry<>(sNew, s);
+											pairsToResolve.add(0, pair2);
+
+											if(DEBUG)
+												System.out.printf(
+														"Added pair [%s; %s] to pairsToResolve!\n", 
+														s, sNew);
+
+											// TODO
+											atLeastOnePair = true;
+										}
 									}
 								}
+
+								// TODO
+								if(atLeastOnePair) break;
 							}
 
-							if(atLeastOnePair)
-								break;
+							// Add this new sentence to the KB
+							putInKB(sNew);
+
 						}
 
-						// Add this new sentence to the KB
-						putInKB(sNew);
-
 					}
-
 				}
 
 			}
 
 		}
+		
+		if(pairsToResolve.isEmpty() && !emptyClause)
+		{
+			if(DEBUG) System.out.printf("\n...tried all possible combinations and failed :(\n");
+		}
 
 		return emptyClause;
 	}
 
-
 	/**
-	 * 
+	 * Restore the KB backup; delete all sentences with steps > 0 (1 is the old
+	 * query, > 1 the derived ones)
 	 */
 	private static void resetKB() 
 	{
@@ -876,6 +785,9 @@ public class homework
 				}
 			}
 		}
+
+		// Start from step 1 again
+		steps = 1;
 	}
 
 
@@ -912,6 +824,8 @@ public class homework
 			{
 
 				writerOutput = new PrintWriter(outputFileName, "UTF-8");
+				
+				if(DEBUG) System.out.printf("Starting inference %s optimization.\n", ((OPTIMIZE)?"with":"without"));
 
 				// For each query
 				for(int q_i = 0; q_i < q; q_i++)
@@ -1046,7 +960,7 @@ class Variable implements Argument, Comparable<Variable>
 	@Override
 	public String toString()
 	{
-		return Variable.VAR_PREFIX + id;
+		return String.format("%s%03d", Variable.VAR_PREFIX, id);
 	}
 
 	/**
@@ -1213,7 +1127,36 @@ class Predicate implements Comparable<Predicate>
 	}
 
 	/**
+	 * Counts the types of variables in this predicate.
+	 * e.g. A(x, x, y) has 2 types of variables.
+	 * @return
+	 */
+	public Integer numberOfVarTypes() 
+	{
+		Set<Variable> vars = new HashSet<>();
+		for(Argument arg : this.args)
+			if(arg instanceof Variable)
+				vars.add((Variable)arg);
+		
+		return vars.size();
+	}
+
+	/**
+	 * Returns the name of the predicate with the ~ sign in front (if negative)
 	 * 
+	 * @param flip
+	 *            Allows you to reverse the sign
+	 * @return
+	 */
+	public String signedName(boolean flip)
+	{
+		return ((this.negative ^ flip)?"~":"").concat(this.name);
+	}
+
+	/**
+	 * For two Predicates to be identical, they must share the same name, the
+	 * same sign, and the exact same list of arguments, right down to the
+	 * variable number.
 	 */
 	@Override
 	public boolean equals(Object obj)
@@ -1233,6 +1176,28 @@ class Predicate implements Comparable<Predicate>
 
 		if (!this.name.equals(other.name))
 			return false;
+		
+		// Check all arguments. if a single one doesn't match, return false.
+		for(int i = 0; i < this.args.size(); i++)
+		{
+			Argument arg = this.args.get(i);
+			Argument argCheck = other.args.get(i);
+			
+			if((arg instanceof Constant && argCheck instanceof Constant) ||
+					(arg instanceof Variable && argCheck instanceof Variable))
+			{
+				if(arg instanceof Constant)
+				{
+					if(!((Constant)arg).equals((Constant)argCheck))
+						return false;
+				}
+				else // It must be the EXACT SAME VARIABLE
+				{
+					if(!((Variable)arg).equals((Variable)argCheck))
+						return false;
+				}
+			}
+		}
 
 		return true;
 	}
@@ -1261,18 +1226,34 @@ class Predicate implements Comparable<Predicate>
 
 		return sb.toString();
 	}
-
-
+	
 	/**
-	 * Returns the name of the predicate with the ~ sign in front (if negative)
-	 * 
-	 * @param flip
-	 *            Allows you to reverse the sign
+	 * Count the number of times an argument appears in a predicate
+	 * @param argCheck The argument to count.
 	 * @return
 	 */
-	public String signedName(boolean flip)
+	public int countOcurrences(Argument argCheck)
 	{
-		return ((this.negative ^ flip)?"~":"").concat(this.name);
+		int count = 0;		
+		for(Argument arg : this.args)
+		{
+			if((arg instanceof Constant && argCheck instanceof Constant) ||
+					(arg instanceof Variable && argCheck instanceof Variable))
+			{
+				if(arg instanceof Constant)
+				{
+					if(((Constant)arg).equals((Constant)argCheck))
+						count++;
+				}
+				else 
+				{
+					if(((Variable)arg).equals((Variable)argCheck))
+						count++;
+				}
+			}
+		}
+		
+		return count;
 	}
 
 	/**
@@ -1419,8 +1400,7 @@ class Sentence // implements Comparable<Sentence>
 
 		// Sort them - helps for checking equal sentences
 		Collections.sort(this.predicates);
-
-		this.removeDuplicates();
+		
 	}
 
 	/**
@@ -1455,81 +1435,105 @@ class Sentence // implements Comparable<Sentence>
 	/**
 	 * An attempt to optimize sentences to prevent looping.
 	 */
-	@Deprecated
-	public void removeDuplicates()
+	public void refactor()
 	{
-		// TODO
+		/*
+		 * TODO check if the sentence is always TRUE
+		if(homework.DEBUG) System.out.printf("Checking for complementary predicates...\n");
 
-		int count = 0;
-
-		// Remove universal duplicates
-		/*for(int i = 0; i < predicates.size()-1; i++)
+		// List<Predicate> not predicate
+		Map<String, Predicate> predicateMap = new HashMap<>();
+		for(Predicate p : this.predicates)
 		{
-			Predicate p1 = predicates.get(i);
-
-			if(p1.isAllVariable())
+			predicateMap.put(p.signedName(false), p);
+		}
+		
+		for(Entry<String, Predicate> e : predicateMap.entrySet())
+		{
+			String name1 = e.getKey();
+			String name2 = e.getValue().signedName(true);
+			System.out.println(name1 + " x okurr x "+name2);
+			if(predicateMap.get(name2) != null)
 			{
-				for(int j = i+1; j < predicates.size(); j++)
-				{
-					Predicate p2 = predicates.get(j);
-
-					if(p2.isAllVariable() && p1.matchesSignature(p2)) 
-					{
-
-						if(homework.DEBUG) System.out.printf("Removing universal duplicate predicate %s, same as %s.\n", p2, p1);
-
-						predicates.remove(j--);
-
-						count++;
-					}
-				}
+				if(homework.DEBUG) 
+					System.out.printf("Possible optimization: %s vs %s.\n", e.getValue(), predicateMap.get(name2));
 			}
 		}*/
 
-		// The predicate-list should already be in sorted order.
-		for(int i = 0; i < predicates.size()-1; i++)
+		int count = 0;
+		
+		if(homework.DEBUG) System.out.printf("Checking for repeated predicates...\n");
+		
+		// Separate the predicates into 'buckets' sorted by signed name, like the kb
+		Map<String, List<Predicate>> buckets = new HashMap<>();
+		for(Predicate p : this.predicates)
 		{
-			Predicate p1 = predicates.get(i);
-			Predicate p2 = predicates.get(i+1);
-
-			if(p1.matchesSignature(p2))
+			if(p.isAllVariable()) 
 			{
-				// Start checking them arguments - if all are variables, optimize
-				boolean allVars = true;
+				List<Predicate> bucket = buckets.get(p.signedName(false));
 
-				for(int j = 0; j < p1.args.size(); j++)
+				if(bucket == null) bucket = new ArrayList<>();	
+
+				bucket.add(p);
+
+				buckets.put(p.signedName(false), bucket);
+			}
+		}
+		if(homework.VERBOSE) System.out.printf("The predicate buckets are %s.\n", buckets);
+		
+		// Now, we can check all predicates of a certain bucket and try to combine
+		for(Entry<String, List<Predicate>> e : buckets.entrySet())
+		{
+			List<Predicate> bucket = e.getValue();
+			if(bucket.size() > 1) // Only then can you combine
+			{
+				if(homework.VERBOSE) System.out.println("There's a shot at optimization for the bucket "+bucket);
+				
+				// This list can be more than 2 predicates, e.g. A(Liz, x), A(y, Jon) which can't be combined.
+				
+				// find the (one) predicate with maximum variable-types, make that the most general
+				// preferably which doesn't appear in other predicates of the sentences
+				// this is all literally so arbit
+				
+				// List<Integer> varTypes = new ArrayList<>();
+				int maxVarTypes = -1;
+				Predicate mostGeneralPredicate = null;
+				
+				for(int i = 0; i < bucket.size(); i++)
 				{
-					Argument arg1 = p1.args.get(j);
-					Argument arg2 = p2.args.get(j);
-					if(!(arg1 instanceof Variable && arg2 instanceof Variable))
+					Predicate currentPredicate = bucket.get(i);
+					int currentVarTypes = currentPredicate.numberOfVarTypes();
+					
+					if(currentVarTypes > maxVarTypes)
 					{
-						allVars = false;
-						break;
+						mostGeneralPredicate = currentPredicate;
+						maxVarTypes = currentVarTypes;
 					}
 				}
-
-				// This is so random, idk even if it'll work
-				if(allVars)
+				
+				if(homework.VERBOSE) System.out.printf("Most general predicate is %s (%d types). Will remove others.\n",
+						mostGeneralPredicate, maxVarTypes, bucket);
+				
+				// Now, remove all other all-variable predicates in this bucket from the sentence
+				for(int i = 0; i < this.predicates.size(); i++)
 				{
-					count++;
-
-					if(homework.DEBUG) System.out.printf("Combining duplicate predicates %s and %s.\n", p1, p2);
-
-					// Replace half of the arguments with the 'common' one
-					for(int k = p1.args.size()/2; k < p1.args.size(); k++)
+					Predicate currentPredicate = this.predicates.get(i);
+					
+					if(!currentPredicate.equals(mostGeneralPredicate) && bucket.contains(currentPredicate))
 					{
-						p1.args.set(k, p2.args.get(k));
+						if(homework.VERBOSE) System.out.printf("Removing predicate %s.\n", currentPredicate);
+						
+						this.predicates.remove(i--);
+						
+						count++;
 					}
-
-					// Delete the next predicate
-					predicates.remove(i+1);
 				}
-
+				
 			}
 		}
 
 		if(homework.DEBUG && count > 0)
-			System.out.printf("%d duplicate(s) removed.\n", count);
+			System.out.printf("%d duplicate(s) removed.\n\n", count);
 	}
 
 	/**
